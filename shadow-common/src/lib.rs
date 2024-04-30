@@ -4,7 +4,9 @@ pub mod server;
 
 pub use misc::get_version;
 
-use remoc::codec;
+use remoc::{codec, rtc};
+
+pub type RtcResult<T> = Result<T, rtc::CallError>;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub enum ObjectType {

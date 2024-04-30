@@ -1,9 +1,10 @@
 use crate::misc;
 use anyhow::Result as AppResult;
+use log::{info, trace};
 use remoc::{codec, prelude::*, rch};
 use shadow_common::{
     client::{self as sc, Client},
-    server as ss, ObjectType,
+    server as ss, ObjectType, RtcResult,
 };
 use std::{net::Ipv4Addr, sync::Arc};
 use tokio::{
@@ -31,7 +32,7 @@ pub struct ServerObj {
 
 #[rtc::async_trait]
 impl ss::Server for ServerObj {
-    async fn handshake(&self) -> Result<ss::Handshake, rtc::CallError> {
+    async fn handshake(&self) -> RtcResult<ss::Handshake> {
         Ok(ss::Handshake {
             message: format!("{:#?}", self.cfg),
         })
@@ -85,8 +86,11 @@ async fn get_client(
 }
 
 async fn handle_connection(client: sc::ClientClient<codec::Bincode>) -> AppResult<()> {
-    let msg = client.handshake().await.unwrap();
-    println!("{}", msg.message);
+    let handshake = client.handshake().await?;
+    info!("client message: {}", handshake.message);
+
+    let sys_info = client.get_system_info().await?;
+    info!("client info: {:#?}", sys_info);
 
     Ok(())
 }
@@ -98,7 +102,7 @@ pub async fn run() -> AppResult<()> {
 
     loop {
         let server_obj = server_obj.clone();
-        let (socket, _addr) = listener.accept().await?;
+        let (socket, addr) = listener.accept().await?;
 
         tokio::spawn(async move {
             let server_client = run_server(server_obj)?;
@@ -108,6 +112,7 @@ pub async fn run() -> AppResult<()> {
 
             let client_client = get_client(&mut rx).await?;
 
+            trace!("{}: connected", addr);
             handle_connection(client_client).await?;
 
             Ok::<(), anyhow::Error>(())

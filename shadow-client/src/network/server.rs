@@ -1,13 +1,15 @@
 use crate::misc;
 use anyhow::Result as AppResult;
+use log::info;
 use remoc::{codec, prelude::*};
 use shadow_common::{
     client as sc,
     server::{self as ss, Server},
-    ObjectType,
+    ObjectType, RtcResult,
 };
 use std::{net::Ipv4Addr, sync::Arc};
-use tokio::{net::TcpStream, sync::RwLock};
+use sysinfo::{Components, Disks, Networks, System};
+use tokio::{net::TcpStream, sync::RwLock, task::yield_now};
 
 #[derive(Debug)]
 pub struct ClientCfg {
@@ -29,9 +31,35 @@ pub struct ClientObj {
 
 #[rtc::async_trait]
 impl sc::Client for ClientObj {
-    async fn handshake(&self) -> Result<sc::Handshake, rtc::CallError> {
+    async fn handshake(&self) -> RtcResult<sc::Handshake> {
         Ok(sc::Handshake {
             message: format!("{:#?}", self.cfg),
+        })
+    }
+
+    async fn get_system_info(&self) -> RtcResult<sc::SystemInfo> {
+        let mut system = System::new_all();
+        system.refresh_all();
+
+        let system_name = System::name().unwrap_or_default();
+        let kernel_version = System::kernel_version().unwrap_or_default();
+        let os_version = System::os_version().unwrap_or_default();
+        let host_name = System::host_name().unwrap_or_default();
+
+        let system = format!("{:?}", system);
+        let disks = format!("{:?}", Disks::new_with_refreshed_list());
+        let networks = format!("{:?}", Networks::new_with_refreshed_list());
+        let components = format!("{:?}", Components::new_with_refreshed_list());
+
+        Ok(sc::SystemInfo {
+            system_name,
+            kernel_version,
+            os_version,
+            host_name,
+            components,
+            disks,
+            networks,
+            system,
         })
     }
 }
@@ -83,10 +111,12 @@ async fn get_client(
 }
 
 async fn handle_connection(client: ss::ServerClient<codec::Bincode>) -> AppResult<()> {
-    let msg = client.handshake().await.unwrap();
-    println!("{}", msg.message);
+    let handshake = client.handshake().await?;
+    info!("server message: {}", handshake.message);
 
-    Ok(())
+    loop {
+        yield_now().await;
+    }
 }
 
 pub async fn run() -> AppResult<()> {

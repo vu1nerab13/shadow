@@ -1,3 +1,4 @@
+use crate::RtcResult;
 use remoc::prelude::*;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -7,5 +8,5 @@ pub struct Handshake {
 
 #[rtc::remote]
 pub trait Server {
-    async fn handshake(&self) -> Result<Handshake, rtc::CallError>;
+    async fn handshake(&self) -> RtcResult<Handshake>;
 }
