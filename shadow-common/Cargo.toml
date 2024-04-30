@@ -1,0 +1,11 @@
+[package]
+name = "shadow-common"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+thiserror = "1.0.59"
+remoc = { version = "0.13.0", features = ["full-codecs", "rmp-serde"] }
+serde = { version = "1.0.198", features = ["derive"] }

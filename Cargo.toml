@@ -1,0 +1,7 @@
+[workspace]
+resolver = "2"
+members = [
+    "shadow-client",
+    "shadow-server",
+    "shadow-common"
+]
