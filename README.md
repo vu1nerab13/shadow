@@ -1,5 +1,6 @@
 # Shadow RAT
 
+[![Rust](https://github.com/vu1nerab13/shadow/actions/workflows/rust.yml/badge.svg)](https://github.com/vu1nerab13/shadow/actions/workflows/rust.yml)
 *A high performance rat server and client written in 100% safe rust*
 
 # Build (WSL)
