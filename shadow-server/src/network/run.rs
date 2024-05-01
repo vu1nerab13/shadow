@@ -18,12 +18,17 @@ use tokio::{
 
 fn run_server(
     addr: SocketAddr,
+    server_objs: Arc<RwLock<HashMap<SocketAddr, Arc<RwLock<ServerObj>>>>>,
 ) -> AppResult<(Arc<RwLock<ServerObj>>, ss::ServerClient<codec::Bincode>)> {
     let server_obj = Arc::new(RwLock::new(ServerObj::new(addr)));
     let (server, server_client) =
         ss::ServerServerSharedMut::<_, codec::Bincode>::new(server_obj.clone(), 1);
 
-    tokio::spawn(server.serve(true));
+    tokio::spawn(async move {
+        server.serve(true).await;
+
+        server_objs.write().await.remove(&addr);
+    });
 
     Ok((server_obj, server_client))
 }
@@ -93,7 +98,7 @@ pub async fn run(
         let (socket, addr) = listener.accept().await?;
 
         tokio::spawn(async move {
-            let (server_obj, server_client) = run_server(addr)?;
+            let (server_obj, server_client) = run_server(addr, server_objs.clone())?;
             let (mut tx, mut rx) = connect_client(socket).await?;
 
             server_objs.write().await.insert(addr, server_obj.clone());
