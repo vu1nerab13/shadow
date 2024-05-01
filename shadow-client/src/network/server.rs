@@ -10,6 +10,7 @@ use shadow_common::{
 use std::{net::Ipv4Addr, sync::Arc};
 use sysinfo::{Components, Disks, Networks, System};
 use tokio::{net::TcpStream, sync::RwLock, task::yield_now};
+use uuid::Uuid;
 
 #[derive(Debug)]
 pub struct ClientCfg {
@@ -105,13 +106,25 @@ async fn get_client(
         Some(s) => match s {
             ObjectType::ClientClient(_) => unreachable!(),
             ObjectType::ServerClient(server_client) => Ok(server_client),
+            ObjectType::Uuid(_) => unreachable!(),
         },
         None => todo!(),
     }
 }
 
-async fn handle_connection(client: ss::ServerClient<codec::Bincode>) -> AppResult<()> {
-    let handshake = client.handshake().await?;
+async fn get_uuid(rx: &mut rch::base::Receiver<ObjectType>) -> AppResult<Uuid> {
+    match rx.recv().await? {
+        Some(s) => match s {
+            ObjectType::ClientClient(_) => unreachable!(),
+            ObjectType::ServerClient(_) => unreachable!(),
+            ObjectType::Uuid(uuid) => Ok(uuid),
+        },
+        None => todo!(),
+    }
+}
+
+async fn handle_connection(client: ss::ServerClient<codec::Bincode>, uuid: Uuid) -> AppResult<()> {
+    let handshake = client.handshake(uuid).await?;
     info!("server message: {}", handshake.message);
 
     loop {
@@ -126,8 +139,9 @@ pub async fn run() -> AppResult<()> {
     send_client(&mut tx, client_client).await?;
 
     let server_client = get_client(&mut rx).await?;
+    let uuid = get_uuid(&mut rx).await?;
 
-    handle_connection(server_client).await?;
+    handle_connection(server_client, uuid).await?;
 
     Ok(())
 }

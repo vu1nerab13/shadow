@@ -768,6 +768,7 @@ dependencies = [
  "shadow-common",
  "sysinfo",
  "tokio",
+ "uuid",
 ]
 
 [[package]]
@@ -778,6 +779,7 @@ dependencies = [
  "serde",
  "sysinfo",
  "thiserror",
+ "uuid",
 ]
 
 [[package]]
@@ -790,7 +792,9 @@ dependencies = [
  "log",
  "remoc",
  "shadow-common",
+ "thiserror",
  "tokio",
+ "uuid",
 ]
 
 [[package]]

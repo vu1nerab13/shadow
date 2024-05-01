@@ -3,14 +3,16 @@ use anyhow::Result as AppResult;
 use log::{info, trace};
 use remoc::{codec, prelude::*, rch};
 use shadow_common::{
-    client::{self as sc, Client},
+    client::{self as sc, Client, ClientClient},
+    error::ShadowError,
     server as ss, ObjectType, RtcResult,
 };
-use std::{net::Ipv4Addr, sync::Arc};
+use std::{collections::HashMap, net::Ipv4Addr, sync::Arc};
 use tokio::{
     net::{TcpListener, TcpStream},
     sync::RwLock,
 };
+use uuid::Uuid;
 
 #[derive(Debug)]
 pub struct ServerCfg {
@@ -28,22 +30,33 @@ impl Default for ServerCfg {
 #[derive(Default)]
 pub struct ServerObj {
     cfg: ServerCfg,
+    clients: HashMap<Uuid, Arc<RwLock<ClientClient<codec::Bincode>>>>,
 }
 
 #[rtc::async_trait]
 impl ss::Server for ServerObj {
-    async fn handshake(&self) -> RtcResult<ss::Handshake> {
-        Ok(ss::Handshake {
-            message: format!("{:#?}", self.cfg),
-        })
+    async fn handshake(&self, uuid: Uuid) -> Result<ss::Handshake, ShadowError> {
+        match self.clients.get(&uuid) {
+            Some(_) => Ok(ss::Handshake {
+                message: format!("{:#?}", self.cfg),
+            }),
+            None => Err(ShadowError::ClientNotExist(uuid)),
+        }
     }
 }
 
-fn run_server(server_obj: Arc<RwLock<ServerObj>>) -> AppResult<ss::ServerClient<codec::Bincode>> {
+fn run_server(
+    server_obj: Arc<RwLock<ServerObj>>,
+    uuid: Uuid,
+) -> AppResult<ss::ServerClient<codec::Bincode>> {
     let (server, server_client) =
-        ss::ServerServerSharedMut::<_, codec::Bincode>::new(server_obj, 1);
+        ss::ServerServerSharedMut::<_, codec::Bincode>::new(server_obj.clone(), 1);
 
-    tokio::spawn(server.serve(true));
+    tokio::spawn(async move {
+        server.serve(true).await;
+
+        server_obj.write().await.clients.remove(&uuid);
+    });
     Ok(server_client)
 }
 
@@ -52,6 +65,12 @@ async fn send_client(
     server_client: ss::ServerClient<codec::Bincode>,
 ) -> AppResult<()> {
     tx.send(ObjectType::ServerClient(server_client)).await?;
+
+    Ok(())
+}
+
+async fn send_uuid(tx: &mut rch::base::Sender<ObjectType>, uuid: Uuid) -> AppResult<()> {
+    tx.send(ObjectType::Uuid(uuid)).await?;
 
     Ok(())
 }
@@ -80,12 +99,15 @@ async fn get_client(
         Some(s) => match s {
             ObjectType::ClientClient(client_client) => Ok(client_client),
             ObjectType::ServerClient(_) => unreachable!(),
+            ObjectType::Uuid(_) => unreachable!(),
         },
         None => todo!(),
     }
 }
 
-async fn handle_connection(client: sc::ClientClient<codec::Bincode>) -> AppResult<()> {
+async fn handle_connection(client: Arc<RwLock<sc::ClientClient<codec::Bincode>>>) -> AppResult<()> {
+    let client = client.read().await;
+
     let handshake = client.handshake().await?;
     info!("client message: {}", handshake.message);
 
@@ -105,14 +127,21 @@ pub async fn run() -> AppResult<()> {
         let (socket, addr) = listener.accept().await?;
 
         tokio::spawn(async move {
-            let server_client = run_server(server_obj)?;
+            let uuid = Uuid::new_v4();
+            let server_client = run_server(server_obj.clone(), uuid)?;
             let (mut tx, mut rx) = connect_client(socket).await?;
 
             send_client(&mut tx, server_client).await?;
+            send_uuid(&mut tx, uuid).await?;
 
-            let client_client = get_client(&mut rx).await?;
+            let client_client = Arc::new(RwLock::new(get_client(&mut rx).await?));
 
             trace!("{}: connected", addr);
+            server_obj
+                .write()
+                .await
+                .clients
+                .insert(uuid, client_client.clone());
             handle_connection(client_client).await?;
 
             Ok::<(), anyhow::Error>(())
