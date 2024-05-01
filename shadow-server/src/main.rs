@@ -1,12 +1,15 @@
 use anyhow::Result as AppResult;
 use flexi_logger::Logger;
 use shadow_server::network;
+use std::{collections::HashMap, sync::Arc};
+use tokio::sync::RwLock;
 
 #[tokio::main]
 async fn main() -> AppResult<()> {
-    Logger::try_with_str("trace")?.start()?;
+    let server_objs = Arc::new(RwLock::new(HashMap::new()));
 
-    network::server::run().await?;
+    Logger::try_with_str("trace")?.start()?;
+    network::run(server_objs).await?;
 
     Ok(())
 }

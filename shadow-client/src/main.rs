@@ -6,7 +6,7 @@ use shadow_client::network;
 async fn main() -> AppResult<()> {
     Logger::try_with_str("trace")?.start()?;
 
-    network::server::run().await?;
+    network::run().await?;
 
     Ok(())
 }

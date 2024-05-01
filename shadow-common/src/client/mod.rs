@@ -1,13 +1,12 @@
 use crate::RtcResult;
 use remoc::prelude::*;
-use sysinfo::{Components, Disks, Networks, System};
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct Handshake {
     pub message: String,
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
 pub struct SystemInfo {
     pub system_name: String,
     pub kernel_version: String,

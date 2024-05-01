@@ -1,6 +1,5 @@
-use crate::{error::ShadowError, RtcResult};
+use crate::error::ShadowError;
 use remoc::prelude::*;
-use uuid::Uuid;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct Handshake {
@@ -9,5 +8,5 @@ pub struct Handshake {
 
 #[rtc::remote]
 pub trait Server {
-    async fn handshake(&self, uuid: Uuid) -> Result<Handshake, ShadowError>;
+    async fn handshake(&self) -> Result<Handshake, ShadowError>;
 }
