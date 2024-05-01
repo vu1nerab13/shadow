@@ -22,6 +22,7 @@ impl Default for ServerCfg {
     }
 }
 
+#[derive(Debug)]
 pub struct ServerObj {
     cfg: ServerCfg,
     pub client: Option<Arc<RwLock<ClientClient<codec::Bincode>>>>,
@@ -37,6 +38,10 @@ impl ServerObj {
             cfg: ServerCfg::default(),
             info: SystemInfo::default(),
         }
+    }
+
+    pub fn summary(&self) -> String {
+        format!("{:?}", self)
     }
 }
 
