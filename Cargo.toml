@@ -5,3 +5,11 @@ members = [
     "shadow-server",
     "shadow-common"
 ]
+
+[workspace.package]
+version = "1.0.0"
+authors = ["Miyamizu Mitsuha"]
+description = "Shadow RAT"
+readme = "README.md"
+repository = "https://github.com/vu1nerab13/musubi"
+edition = "2021"
