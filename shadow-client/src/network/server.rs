@@ -67,7 +67,10 @@ impl sc::Client for ClientObj {
         })
     }
 
-    async fn shutdown(&self) -> Result<(), ShadowError> {
-        unimplemented!();
+    async fn system_shutdown(&self) -> Result<bool, ShadowError> {
+        match system_shutdown::shutdown() {
+            Ok(_) => Ok(true),
+            Err(_) => Err(ShadowError::ShutdownError),
+        }
     }
 }

@@ -1,7 +1,11 @@
 use crate::misc;
 use log::trace;
 use remoc::{chmux::ChMuxError, codec, prelude::*};
-use shadow_common::{client as sc, error::ShadowError, server as ss};
+use shadow_common::{
+    client::{self as sc, Client},
+    error::ShadowError,
+    server as ss,
+};
 use std::{net::SocketAddr, sync::Arc};
 use tokio::{sync::RwLock, task::JoinHandle};
 
@@ -43,7 +47,7 @@ impl ServerObj {
         format!("{:?}", self)
     }
 
-    pub fn shutdown(&self) -> bool {
+    pub fn disconnect(&self) -> bool {
         let task = match &self.task {
             Some(t) => t,
             None => return false,
@@ -52,6 +56,18 @@ impl ServerObj {
         task.abort();
 
         true
+    }
+
+    pub async fn system_shutdown(&self) -> bool {
+        let client = match &self.client {
+            Some(c) => c,
+            None => return false,
+        };
+
+        match client.read().await.system_shutdown().await {
+            Ok(_) => true,
+            Err(_) => false,
+        }
     }
 }
 

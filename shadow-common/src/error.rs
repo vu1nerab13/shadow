@@ -5,6 +5,9 @@ use thiserror::Error;
 pub enum ShadowError {
     #[error("connect error")]
     CallError(CallError),
+
+    #[error("shutdown error")]
+    ShutdownError,
 }
 
 impl From<CallError> for ShadowError {

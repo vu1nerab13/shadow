@@ -24,5 +24,5 @@ pub trait Client {
 
     async fn get_system_info(&self) -> Result<SystemInfo, ShadowError>;
 
-    async fn shutdown(&self) -> Result<(), ShadowError>;
+    async fn system_shutdown(&self) -> Result<bool, ShadowError>;
 }

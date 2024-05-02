@@ -14,6 +14,8 @@ enum ClientOperation {
     Summary,
     #[strum(ascii_case_insensitive)]
     Shutdown,
+    #[strum(ascii_case_insensitive)]
+    Disconnect,
 }
 
 #[derive(EnumString)]
@@ -117,6 +119,7 @@ async fn try_client_op(
     match op {
         ClientOperation::Summary => get_client_summary(server_obj).await,
         ClientOperation::Shutdown => get_client_shutdown(server_obj).await,
+        ClientOperation::Disconnect => get_client_disconnect(server_obj).await,
     }
 }
 
@@ -148,7 +151,24 @@ async fn get_client_shutdown(
         error: error::WebError,
     }
 
-    let error = match server_obj.read().await.shutdown() {
+    let error = match server_obj.read().await.system_shutdown().await {
+        true => error::WebError::Success,
+        false => error::WebError::UnknownError,
+    };
+
+    Ok((serde_json::to_string(&Shutdown { error })?, StatusCode::OK))
+}
+
+/// Disconnect a client
+async fn get_client_disconnect(
+    server_obj: &Arc<RwLock<ServerObj>>,
+) -> AppResult<(String, StatusCode)> {
+    #[derive(Serialize, Deserialize)]
+    struct Shutdown {
+        error: error::WebError,
+    }
+
+    let error = match server_obj.read().await.disconnect() {
         true => error::WebError::Success,
         false => error::WebError::UnknownError,
     };
