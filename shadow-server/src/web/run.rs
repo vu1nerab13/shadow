@@ -5,11 +5,22 @@ use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 use tokio::sync::RwLock;
 use warp::{path, Filter};
 
+pub struct Config {
+    addr: SocketAddr,
+}
+
+impl Config {
+    pub fn new(addr: SocketAddr) -> Self {
+        Self { addr }
+    }
+}
+
 pub async fn run(
+    cfg: Config,
     server_objs: Arc<RwLock<HashMap<SocketAddr, Arc<RwLock<ServerObj>>>>>,
 ) -> Result<()> {
     // Root page
-    let root = path::end().map(|| "Welcome to musubi server!");
+    let root = path::end().map(|| "Welcome to shadow server!");
     let optional = warp::path::param::<String>()
         .map(Some)
         .or_else(|_| async { Ok::<(Option<String>,), std::convert::Infallible>((None,)) });
@@ -25,8 +36,7 @@ pub async fn run(
 
     let routes = root.or(client).with(warp::cors().allow_any_origin());
 
-    // Todo: Don not hardcode here
-    warp::serve(routes).run(([127, 0, 0, 1], 5000)).await;
+    warp::serve(routes).run(cfg.addr).await;
 
     Ok(())
 }

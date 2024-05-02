@@ -17,6 +17,16 @@ use tokio::{
     task::JoinHandle,
 };
 
+pub struct Config {
+    addr: SocketAddr,
+}
+
+impl Config {
+    pub fn new(addr: SocketAddr) -> Self {
+        Self { addr }
+    }
+}
+
 fn run_server(
     addr: SocketAddr,
     server_objs: Arc<RwLock<HashMap<SocketAddr, Arc<RwLock<ServerObj>>>>>,
@@ -90,9 +100,10 @@ async fn handle_connection(
 }
 
 pub async fn run(
+    cfg: Config,
     server_objs: Arc<RwLock<HashMap<SocketAddr, Arc<RwLock<ServerObj>>>>>,
 ) -> AppResult<()> {
-    let listener = TcpListener::bind((Ipv4Addr::UNSPECIFIED, 1244)).await?;
+    let listener = TcpListener::bind(cfg.addr).await?;
 
     loop {
         let server_objs = server_objs.clone();
