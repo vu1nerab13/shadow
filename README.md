@@ -12,12 +12,12 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 Clone repository
 ```bash
-git clone https://github.com/vu1nerab13/musubi.git
+git clone https://github.com/vu1nerab13/shadow.git
 ```
 
 Build
 ```bash
-cd musubi
+cd shadow
 cargo build
 ```
 
