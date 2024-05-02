@@ -5,6 +5,7 @@ use std::sync::Arc;
 use sysinfo::{Components, Disks, Networks, System};
 use tokio::sync::RwLock;
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct ClientCfg {
     version: String,

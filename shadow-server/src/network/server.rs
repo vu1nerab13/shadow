@@ -5,6 +5,7 @@ use shadow_common::{client as sc, error::ShadowError, server as ss};
 use std::{net::SocketAddr, sync::Arc};
 use tokio::{sync::RwLock, task::JoinHandle};
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct ServerCfg {
     version: String,

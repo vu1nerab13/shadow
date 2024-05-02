@@ -6,11 +6,7 @@ use shadow_common::{
     client::{self as sc, Client},
     server as ss, ObjectType,
 };
-use std::{
-    collections::HashMap,
-    net::{Ipv4Addr, SocketAddr},
-    sync::Arc,
-};
+use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 use tokio::{
     net::{TcpListener, TcpStream},
     sync::RwLock,
