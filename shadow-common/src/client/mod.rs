@@ -25,4 +25,12 @@ pub trait Client {
     async fn get_system_info(&self) -> Result<SystemInfo, ShadowError>;
 
     async fn system_shutdown(&self) -> Result<bool, ShadowError>;
+
+    async fn system_logout(&self) -> Result<bool, ShadowError>;
+
+    async fn system_reboot(&self) -> Result<bool, ShadowError>;
+
+    async fn system_hibernate(&self) -> Result<bool, ShadowError>;
+
+    async fn system_sleep(&self) -> Result<bool, ShadowError>;
 }

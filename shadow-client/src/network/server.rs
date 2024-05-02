@@ -70,7 +70,35 @@ impl sc::Client for ClientObj {
     async fn system_shutdown(&self) -> Result<bool, ShadowError> {
         match system_shutdown::shutdown() {
             Ok(_) => Ok(true),
-            Err(_) => Err(ShadowError::ShutdownError),
+            Err(_) => Err(ShadowError::SystemPowerError),
+        }
+    }
+
+    async fn system_logout(&self) -> Result<bool, ShadowError> {
+        match system_shutdown::logout() {
+            Ok(_) => Ok(true),
+            Err(_) => Err(ShadowError::SystemPowerError),
+        }
+    }
+
+    async fn system_reboot(&self) -> Result<bool, ShadowError> {
+        match system_shutdown::reboot() {
+            Ok(_) => Ok(true),
+            Err(_) => Err(ShadowError::SystemPowerError),
+        }
+    }
+
+    async fn system_hibernate(&self) -> Result<bool, ShadowError> {
+        match system_shutdown::hibernate() {
+            Ok(_) => Ok(true),
+            Err(_) => Err(ShadowError::SystemPowerError),
+        }
+    }
+
+    async fn system_sleep(&self) -> Result<bool, ShadowError> {
+        match system_shutdown::sleep() {
+            Ok(_) => Ok(true),
+            Err(_) => Err(ShadowError::SystemPowerError),
         }
     }
 }

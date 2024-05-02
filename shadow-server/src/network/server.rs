@@ -32,6 +32,14 @@ pub struct ServerObj {
     pub task: Option<JoinHandle<Result<(), ChMuxError<std::io::Error, std::io::Error>>>>,
 }
 
+pub enum SystemPowerAction {
+    Shutdown,
+    Reboot,
+    Logout,
+    Sleep,
+    Hibernate,
+}
+
 impl ServerObj {
     pub fn new(addr: SocketAddr) -> Self {
         Self {
@@ -58,16 +66,20 @@ impl ServerObj {
         true
     }
 
-    pub async fn system_shutdown(&self) -> bool {
+    pub async fn system_power(&self, action: SystemPowerAction) -> Result<bool, ShadowError> {
         let client = match &self.client {
-            Some(c) => c,
-            None => return false,
+            Some(c) => c.read().await,
+            None => return Err(ShadowError::ClientNotFound),
         };
 
-        match client.read().await.system_shutdown().await {
-            Ok(_) => true,
-            Err(_) => false,
+        match action {
+            SystemPowerAction::Shutdown => client.system_shutdown(),
+            SystemPowerAction::Reboot => client.system_reboot(),
+            SystemPowerAction::Logout => client.system_logout(),
+            SystemPowerAction::Sleep => client.system_sleep(),
+            SystemPowerAction::Hibernate => client.system_hibernate(),
         }
+        .await
     }
 }
 

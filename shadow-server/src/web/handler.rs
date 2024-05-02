@@ -1,4 +1,7 @@
-use crate::{network::ServerObj, web::error};
+use crate::{
+    network::{ServerObj, SystemPowerAction},
+    web::error,
+};
 use anyhow::Result as AppResult;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, net::SocketAddr, str::FromStr, sync::Arc};
@@ -14,6 +17,14 @@ enum ClientOperation {
     Summary,
     #[strum(ascii_case_insensitive)]
     Shutdown,
+    #[strum(ascii_case_insensitive)]
+    Reboot,
+    #[strum(ascii_case_insensitive)]
+    Sleep,
+    #[strum(ascii_case_insensitive)]
+    Logout,
+    #[strum(ascii_case_insensitive)]
+    Hibernate,
     #[strum(ascii_case_insensitive)]
     Disconnect,
 }
@@ -118,8 +129,16 @@ async fn try_client_op(
 
     match op {
         ClientOperation::Summary => get_client_summary(server_obj).await,
-        ClientOperation::Shutdown => get_client_shutdown(server_obj).await,
         ClientOperation::Disconnect => get_client_disconnect(server_obj).await,
+        ClientOperation::Shutdown => {
+            get_client_power(server_obj, SystemPowerAction::Shutdown).await
+        }
+        ClientOperation::Reboot => get_client_power(server_obj, SystemPowerAction::Reboot).await,
+        ClientOperation::Sleep => get_client_power(server_obj, SystemPowerAction::Sleep).await,
+        ClientOperation::Logout => get_client_power(server_obj, SystemPowerAction::Logout).await,
+        ClientOperation::Hibernate => {
+            get_client_power(server_obj, SystemPowerAction::Hibernate).await
+        }
     }
 }
 
@@ -143,15 +162,16 @@ async fn get_client_summary(
 }
 
 /// Let a client to shutdown
-async fn get_client_shutdown(
+async fn get_client_power(
     server_obj: &Arc<RwLock<ServerObj>>,
+    action: SystemPowerAction,
 ) -> AppResult<(String, StatusCode)> {
     #[derive(Serialize, Deserialize)]
     struct Shutdown {
         error: error::WebError,
     }
 
-    let error = match server_obj.read().await.system_shutdown().await {
+    let error = match server_obj.read().await.system_power(action).await? {
         true => error::WebError::Success,
         false => error::WebError::UnknownError,
     };

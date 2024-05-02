@@ -6,8 +6,11 @@ pub enum ShadowError {
     #[error("connect error")]
     CallError(CallError),
 
-    #[error("shutdown error")]
-    ShutdownError,
+    #[error("system power error")]
+    SystemPowerError,
+
+    #[error("client not found")]
+    ClientNotFound,
 }
 
 impl From<CallError> for ShadowError {
