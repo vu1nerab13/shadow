@@ -12,6 +12,8 @@ type Response<T> = Result<T, Rejection>;
 enum Operation {
     #[strum(ascii_case_insensitive)]
     Summary,
+    #[strum(ascii_case_insensitive)]
+    Shutdown,
 }
 
 pub async fn client_operation(
@@ -102,6 +104,7 @@ async fn try_client_op(
 
     match op {
         Operation::Summary => get_client_summary(server_obj).await,
+        Operation::Shutdown => get_client_shutdown(server_obj).await,
     }
 }
 
@@ -121,4 +124,20 @@ async fn get_client_summary(
         })?,
         StatusCode::OK,
     ))
+}
+
+async fn get_client_shutdown(
+    server_obj: &Arc<RwLock<ServerObj>>,
+) -> AppResult<(String, StatusCode)> {
+    #[derive(Serialize, Deserialize)]
+    struct Shutdown {
+        error: error::WebError,
+    }
+
+    let error = match server_obj.read().await.shutdown() {
+        true => error::WebError::Success,
+        false => error::WebError::UnknownError,
+    };
+
+    Ok((serde_json::to_string(&Shutdown { error })?, StatusCode::OK))
 }

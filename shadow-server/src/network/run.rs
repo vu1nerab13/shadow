@@ -1,7 +1,7 @@
 use crate::network::server::ServerObj;
 use anyhow::Result as AppResult;
 use log::{info, trace};
-use remoc::{codec, prelude::*, rch};
+use remoc::{chmux::ChMuxError, codec, prelude::*, rch};
 use shadow_common::{
     client::{self as sc, Client},
     server as ss, ObjectType,
@@ -14,6 +14,7 @@ use std::{
 use tokio::{
     net::{TcpListener, TcpStream},
     sync::RwLock,
+    task::JoinHandle,
 };
 
 fn run_server(
@@ -45,6 +46,7 @@ async fn send_client(
 async fn connect_client(
     socket: TcpStream,
 ) -> AppResult<(
+    JoinHandle<Result<(), ChMuxError<std::io::Error, std::io::Error>>>,
     rch::base::Sender<ObjectType>,
     rch::base::Receiver<ObjectType>,
 )> {
@@ -54,9 +56,8 @@ async fn connect_client(
         rch::base::Sender<ObjectType>,
         rch::base::Receiver<ObjectType>,
     ) = remoc::Connect::io(remoc::Cfg::default(), socket_rx, socket_tx).await?;
-    tokio::spawn(conn);
 
-    Ok((tx, rx))
+    Ok((tokio::spawn(conn), tx, rx))
 }
 
 async fn get_client(
@@ -91,7 +92,7 @@ async fn handle_connection(
 pub async fn run(
     server_objs: Arc<RwLock<HashMap<SocketAddr, Arc<RwLock<ServerObj>>>>>,
 ) -> AppResult<()> {
-    let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 1244)).await?;
+    let listener = TcpListener::bind((Ipv4Addr::UNSPECIFIED, 1244)).await?;
 
     loop {
         let server_objs = server_objs.clone();
@@ -99,13 +100,14 @@ pub async fn run(
 
         tokio::spawn(async move {
             let (server_obj, server_client) = run_server(addr, server_objs.clone())?;
-            let (mut tx, mut rx) = connect_client(socket).await?;
+            let (task, mut tx, mut rx) = connect_client(socket).await?;
 
             server_objs.write().await.insert(addr, server_obj.clone());
             send_client(&mut tx, server_client).await?;
 
             let client_client = Arc::new(RwLock::new(get_client(&mut rx).await?));
             server_obj.write().await.client = Some(client_client.clone());
+            server_obj.write().await.task = Some(task);
 
             trace!("{}: connected", addr);
             handle_connection(addr, server_obj, client_client).await?;

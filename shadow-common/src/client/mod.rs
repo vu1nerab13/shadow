@@ -1,4 +1,4 @@
-use crate::RtcResult;
+use crate::error::ShadowError;
 use remoc::prelude::*;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -20,7 +20,9 @@ pub struct SystemInfo {
 
 #[rtc::remote]
 pub trait Client {
-    async fn handshake(&self) -> RtcResult<Handshake>;
+    async fn handshake(&self) -> Result<Handshake, ShadowError>;
 
-    async fn get_system_info(&self) -> RtcResult<SystemInfo>;
+    async fn get_system_info(&self) -> Result<SystemInfo, ShadowError>;
+
+    async fn shutdown(&self) -> Result<(), ShadowError>;
 }

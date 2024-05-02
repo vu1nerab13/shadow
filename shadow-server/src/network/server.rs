@@ -1,13 +1,9 @@
 use crate::misc;
 use log::trace;
-use remoc::{codec, prelude::*};
-use shadow_common::{
-    client::{ClientClient, SystemInfo},
-    error::ShadowError,
-    server as ss,
-};
+use remoc::{chmux::ChMuxError, codec, prelude::*};
+use shadow_common::{client as sc, error::ShadowError, server as ss};
 use std::{net::SocketAddr, sync::Arc};
-use tokio::sync::RwLock;
+use tokio::{sync::RwLock, task::JoinHandle};
 
 #[derive(Debug)]
 pub struct ServerCfg {
@@ -25,23 +21,36 @@ impl Default for ServerCfg {
 #[derive(Debug)]
 pub struct ServerObj {
     cfg: ServerCfg,
-    pub client: Option<Arc<RwLock<ClientClient<codec::Bincode>>>>,
+    pub client: Option<Arc<RwLock<sc::ClientClient<codec::Bincode>>>>,
     pub addr: SocketAddr,
-    pub info: SystemInfo,
+    pub info: sc::SystemInfo,
+    pub task: Option<JoinHandle<Result<(), ChMuxError<std::io::Error, std::io::Error>>>>,
 }
 
 impl ServerObj {
     pub fn new(addr: SocketAddr) -> Self {
         Self {
             addr,
-            client: Option::None,
+            client: None,
             cfg: ServerCfg::default(),
-            info: SystemInfo::default(),
+            info: sc::SystemInfo::default(),
+            task: None,
         }
     }
 
     pub fn summary(&self) -> String {
         format!("{:?}", self)
+    }
+
+    pub fn shutdown(&self) -> bool {
+        let task = match &self.task {
+            Some(t) => t,
+            None => return false,
+        };
+
+        task.abort();
+
+        true
     }
 }
 

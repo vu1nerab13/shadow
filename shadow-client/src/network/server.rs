@@ -1,7 +1,9 @@
 use crate::misc;
-use remoc::prelude::*;
-use shadow_common::{client as sc, RtcResult};
+use remoc::{codec, prelude::*};
+use shadow_common::{client as sc, error::ShadowError, server as ss};
+use std::sync::Arc;
 use sysinfo::{Components, Disks, Networks, System};
+use tokio::sync::RwLock;
 
 #[derive(Debug)]
 pub struct ClientCfg {
@@ -16,20 +18,29 @@ impl Default for ClientCfg {
     }
 }
 
-#[derive(Default)]
 pub struct ClientObj {
     cfg: ClientCfg,
+    pub client: Option<Arc<RwLock<ss::ServerClient<codec::Bincode>>>>,
+}
+
+impl ClientObj {
+    pub fn new() -> Self {
+        Self {
+            cfg: ClientCfg::default(),
+            client: None,
+        }
+    }
 }
 
 #[rtc::async_trait]
 impl sc::Client for ClientObj {
-    async fn handshake(&self) -> RtcResult<sc::Handshake> {
+    async fn handshake(&self) -> Result<sc::Handshake, ShadowError> {
         Ok(sc::Handshake {
             message: format!("{:#?}", self.cfg),
         })
     }
 
-    async fn get_system_info(&self) -> RtcResult<sc::SystemInfo> {
+    async fn get_system_info(&self) -> Result<sc::SystemInfo, ShadowError> {
         let mut system = System::new_all();
         system.refresh_all();
 
@@ -53,5 +64,9 @@ impl sc::Client for ClientObj {
             networks,
             system,
         })
+    }
+
+    async fn shutdown(&self) -> Result<(), ShadowError> {
+        unimplemented!();
     }
 }

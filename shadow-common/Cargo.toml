@@ -14,3 +14,4 @@ serde = { version = "1.0.198", features = ["derive"] }
 sysinfo = "0.30.11"
 uuid = "1.8.0"
 thiserror = "1.0.59"
+captrs2 = "0.2.2"

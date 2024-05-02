@@ -7,17 +7,17 @@ use shadow_common::{
     server::{self as ss, Server},
     ObjectType,
 };
-use std::{net::Ipv4Addr, sync::Arc};
+use std::{net::SocketAddrV4, sync::Arc};
 use tokio::{net::TcpStream, sync::RwLock, task::yield_now};
 
-fn run_server() -> AppResult<sc::ClientClient<codec::Bincode>> {
-    let client_obj = Arc::new(RwLock::new(ClientObj::default()));
+fn run_server() -> AppResult<(Arc<RwLock<ClientObj>>, sc::ClientClient<codec::Bincode>)> {
+    let client_obj = Arc::new(RwLock::new(ClientObj::new()));
     let (server, client_client) =
-        sc::ClientServerSharedMut::<_, codec::Bincode>::new(client_obj, 1);
+        sc::ClientServerSharedMut::<_, codec::Bincode>::new(client_obj.clone(), 1);
 
     tokio::spawn(server.serve(true));
 
-    Ok(client_client)
+    Ok((client_obj, client_client))
 }
 
 async fn send_client(
@@ -33,7 +33,7 @@ async fn connect_server() -> AppResult<(
     rch::base::Sender<ObjectType>,
     rch::base::Receiver<ObjectType>,
 )> {
-    let socket = TcpStream::connect((Ipv4Addr::LOCALHOST, 1244)).await?;
+    let socket = TcpStream::connect("192.168.5.5:1244".parse::<SocketAddrV4>().unwrap()).await?;
     let (socket_rx, socket_tx) = socket.into_split();
     let (conn, tx, rx): (
         _,
@@ -57,7 +57,9 @@ async fn get_client(
     }
 }
 
-async fn handle_connection(client: ss::ServerClient<codec::Bincode>) -> AppResult<()> {
+async fn handle_connection(client: Arc<RwLock<ss::ServerClient<codec::Bincode>>>) -> AppResult<()> {
+    let client = client.read().await;
+
     let handshake = client.handshake().await?;
     info!("server message: {}", handshake.message);
 
@@ -72,12 +74,13 @@ async fn handle_connection(client: ss::ServerClient<codec::Bincode>) -> AppResul
 }
 
 pub async fn run() -> AppResult<()> {
-    let client_client = run_server()?;
+    let (client_obj, client_client) = run_server()?;
     let (mut tx, mut rx) = connect_server().await?;
 
     send_client(&mut tx, client_client).await?;
 
-    let server_client = get_client(&mut rx).await?;
+    let server_client = Arc::new(RwLock::new(get_client(&mut rx).await?));
+    client_obj.write().await.client = Some(server_client.clone());
 
     handle_connection(server_client).await?;
 
