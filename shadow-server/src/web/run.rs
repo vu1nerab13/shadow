@@ -21,10 +21,16 @@ pub async fn run(
 ) -> Result<()> {
     // Root page
     let root = path::end().map(|| "Welcome to shadow server!");
+
+    // A optional param
     let optional = warp::path::param::<String>()
         .map(Some)
         .or_else(|_| async { Ok::<(Option<String>,), std::convert::Infallible>((None,)) });
 
+    // The request on a specific client should look like `<address>/client/<client_address>/<client_operation>`
+    // Where `client_operation` could be `summary` or `shutdown` etc.
+    // And request on the server itself looks like `<address>/client/<server_operation>`
+    // Where `client_operation` could be `query` to query all clients connected to the server
     let client = warp::path("client")
         .and(path::param())
         .and(optional)

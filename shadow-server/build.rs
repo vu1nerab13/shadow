@@ -4,6 +4,7 @@ use std::io::Write;
 use std::path::Path;
 use std::process::Command;
 
+/// Get version that combined with git and `CARGO_PKG_VERSION`
 fn get_git_version() -> String {
     let version = env::var("CARGO_PKG_VERSION").unwrap();
 

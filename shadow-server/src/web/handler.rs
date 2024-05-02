@@ -9,13 +9,20 @@ use warp::{http::StatusCode, reply, Rejection, Reply};
 type Response<T> = Result<T, Rejection>;
 
 #[derive(EnumString)]
-enum Operation {
+enum ClientOperation {
     #[strum(ascii_case_insensitive)]
     Summary,
     #[strum(ascii_case_insensitive)]
     Shutdown,
 }
 
+#[derive(EnumString)]
+enum ServerOperation {
+    #[strum(ascii_case_insensitive)]
+    Query,
+}
+
+/// The route which handles all client request
 pub async fn client_operation(
     addr: String,
     op: Option<String>,
@@ -27,9 +34,11 @@ pub async fn client_operation(
         error: error::WebError,
     }
 
-    let (reply, status) = match match addr.as_str() {
-        "query" if op == None => query_clients(server_objs).await,
-        _ => try_client_op(addr, op, server_objs).await,
+    let (reply, status) = match match ServerOperation::from_str(&addr) {
+        Ok(o) => match o {
+            ServerOperation::Query => query_clients(server_objs, op).await,
+        },
+        Err(_) => try_client_op(addr, op, server_objs).await,
     } {
         Ok(v) => v,
         Err(e) => (
@@ -45,8 +54,10 @@ pub async fn client_operation(
     Ok(reply::with_status(reply, status))
 }
 
+/// Query all clients that connected to the server
 async fn query_clients(
     server_objs: Arc<RwLock<HashMap<SocketAddr, Arc<RwLock<ServerObj>>>>>,
+    _op: Option<String>,
 ) -> AppResult<(String, StatusCode)> {
     #[derive(Serialize, Deserialize)]
     struct Query {
@@ -68,6 +79,7 @@ async fn query_clients(
     ))
 }
 
+/// Try to perform a operation on a specific client
 async fn try_client_op(
     addr: String,
     op: Option<String>,
@@ -79,7 +91,7 @@ async fn try_client_op(
     }
 
     let op = match op {
-        Some(o) => Operation::from_str(&o)?,
+        Some(o) => ClientOperation::from_str(&o)?,
         None => {
             return Ok((
                 serde_json::to_string(&QueryClient {
@@ -103,11 +115,12 @@ async fn try_client_op(
     };
 
     match op {
-        Operation::Summary => get_client_summary(server_obj).await,
-        Operation::Shutdown => get_client_shutdown(server_obj).await,
+        ClientOperation::Summary => get_client_summary(server_obj).await,
+        ClientOperation::Shutdown => get_client_shutdown(server_obj).await,
     }
 }
 
+/// Get a client's summary
 async fn get_client_summary(
     server_obj: &Arc<RwLock<ServerObj>>,
 ) -> AppResult<(String, StatusCode)> {
@@ -126,6 +139,7 @@ async fn get_client_summary(
     ))
 }
 
+/// Let a client to shutdown
 async fn get_client_shutdown(
     server_obj: &Arc<RwLock<ServerObj>>,
 ) -> AppResult<(String, StatusCode)> {

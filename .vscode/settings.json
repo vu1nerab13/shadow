@@ -3,6 +3,7 @@
         "Bincode",
         "chmux",
         "flexi",
+        "objs",
         "proto",
         "remoc",
         "sysinfo",
