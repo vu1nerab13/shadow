@@ -105,6 +105,7 @@ impl sc::Client for ClientObj {
     async fn get_installed_apps(&self) -> Result<Vec<sc::App>, ShadowError> {
         match installed::list() {
             Ok(l) => Ok(l
+                .filter(|app| app.name().to_string().is_empty() == false)
                 .map(|app| sc::App {
                     name: app.name().to_string(),
                     publisher: app.publisher().to_string(),
