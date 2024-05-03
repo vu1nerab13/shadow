@@ -6,6 +6,7 @@ use shadow_client::network;
 
 #[tokio::main]
 async fn main() -> AppResult<()> {
+    #[cfg(debug_assertions)]
     Logger::try_with_str("trace")?.start()?;
 
     // Server config

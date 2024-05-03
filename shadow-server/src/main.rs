@@ -6,8 +6,8 @@ use tokio::sync::RwLock;
 
 #[tokio::main]
 async fn main() -> AppResult<()> {
-    // TODO: Change log level depending on build profile
     // Start logging
+    #[cfg(debug_assertions)]
     Logger::try_with_str("trace")?.start()?;
 
     // A instance representing all clients connected to the server
