@@ -101,4 +101,17 @@ impl sc::Client for ClientObj {
             Err(_) => Err(ShadowError::SystemPowerError),
         }
     }
+
+    async fn get_installed_apps(&self) -> Result<Vec<sc::App>, ShadowError> {
+        match installed::list() {
+            Ok(l) => Ok(l
+                .map(|app| sc::App {
+                    name: app.name().to_string(),
+                    publisher: app.publisher().to_string(),
+                    version: app.version().to_string(),
+                })
+                .collect()),
+            Err(e) => Err(ShadowError::QueryAppsError(e.to_string())),
+        }
+    }
 }

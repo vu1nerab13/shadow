@@ -5,7 +5,7 @@ use thiserror::Error;
 pub enum WebError {
     #[error("request successfully")]
     Success,
-    
+
     #[error("client not found")]
     ClientNotFound,
 

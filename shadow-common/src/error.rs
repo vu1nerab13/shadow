@@ -11,6 +11,9 @@ pub enum ShadowError {
 
     #[error("client not found")]
     ClientNotFound,
+
+    #[error("can not list installed apps, message: {0}")]
+    QueryAppsError(String),
 }
 
 impl From<CallError> for ShadowError {

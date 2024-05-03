@@ -7,7 +7,10 @@ use shadow_common::{
     server as ss,
 };
 use std::{net::SocketAddr, sync::Arc};
-use tokio::{sync::RwLock, task::JoinHandle};
+use tokio::{
+    sync::{RwLock, RwLockReadGuard},
+    task::JoinHandle,
+};
 
 #[allow(dead_code)]
 #[derive(Debug)]
@@ -51,6 +54,15 @@ impl ServerObj {
         }
     }
 
+    async fn get_client(
+        &self,
+    ) -> Result<RwLockReadGuard<sc::ClientClient<codec::Bincode>>, ShadowError> {
+        match &self.client {
+            Some(c) => Ok(c.read().await),
+            None => return Err(ShadowError::ClientNotFound),
+        }
+    }
+
     pub fn summary(&self) -> String {
         format!("{:?}", self)
     }
@@ -67,10 +79,7 @@ impl ServerObj {
     }
 
     pub async fn system_power(&self, action: SystemPowerAction) -> Result<bool, ShadowError> {
-        let client = match &self.client {
-            Some(c) => c.read().await,
-            None => return Err(ShadowError::ClientNotFound),
-        };
+        let client = self.get_client().await?;
 
         match action {
             SystemPowerAction::Shutdown => client.system_shutdown(),
@@ -80,6 +89,12 @@ impl ServerObj {
             SystemPowerAction::Hibernate => client.system_hibernate(),
         }
         .await
+    }
+
+    pub async fn get_installed_apps(&self) -> Result<Vec<sc::App>, ShadowError> {
+        let client = self.get_client().await?;
+
+        client.get_installed_apps().await
     }
 }
 

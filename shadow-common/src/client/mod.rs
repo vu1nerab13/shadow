@@ -18,6 +18,13 @@ pub struct SystemInfo {
     pub system: String,
 }
 
+#[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
+pub struct App {
+    pub name: String,
+    pub publisher: String,
+    pub version: String,
+}
+
 #[rtc::remote]
 pub trait Client {
     async fn handshake(&self) -> Result<Handshake, ShadowError>;
@@ -33,4 +40,6 @@ pub trait Client {
     async fn system_hibernate(&self) -> Result<bool, ShadowError>;
 
     async fn system_sleep(&self) -> Result<bool, ShadowError>;
+
+    async fn get_installed_apps(&self) -> Result<Vec<App>, ShadowError>;
 }

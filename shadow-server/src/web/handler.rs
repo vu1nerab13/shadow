@@ -4,6 +4,7 @@ use crate::{
 };
 use anyhow::Result as AppResult;
 use serde::{Deserialize, Serialize};
+use shadow_common::client as sc;
 use std::{collections::HashMap, net::SocketAddr, str::FromStr, sync::Arc};
 use strum_macros::EnumString;
 use tokio::sync::RwLock;
@@ -25,6 +26,8 @@ enum ClientOperation {
     Logout,
     #[strum(ascii_case_insensitive)]
     Hibernate,
+    #[strum(ascii_case_insensitive)]
+    GetApps,
     #[strum(ascii_case_insensitive)]
     Disconnect,
 }
@@ -139,6 +142,7 @@ async fn try_client_op(
         ClientOperation::Hibernate => {
             get_client_power(server_obj, SystemPowerAction::Hibernate).await
         }
+        ClientOperation::GetApps => get_client_apps(server_obj).await,
     }
 }
 
@@ -149,13 +153,11 @@ async fn get_client_summary(
     #[derive(Serialize, Deserialize)]
     struct GetSummary {
         summary: String,
-        error: error::WebError,
     }
 
     Ok((
         serde_json::to_string(&GetSummary {
             summary: server_obj.read().await.summary(),
-            error: error::WebError::Success,
         })?,
         StatusCode::OK,
     ))
@@ -177,6 +179,21 @@ async fn get_client_power(
     };
 
     Ok((serde_json::to_string(&Shutdown { error })?, StatusCode::OK))
+}
+
+/// Get client's apps
+async fn get_client_apps(server_obj: &Arc<RwLock<ServerObj>>) -> AppResult<(String, StatusCode)> {
+    #[derive(Serialize, Deserialize)]
+    struct GetApps {
+        apps: Vec<sc::App>,
+    }
+
+    Ok((
+        serde_json::to_string(&GetApps {
+            apps: server_obj.read().await.get_installed_apps().await?,
+        })?,
+        StatusCode::OK,
+    ))
 }
 
 /// Disconnect a client
