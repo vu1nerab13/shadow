@@ -982,8 +982,7 @@ dependencies = [
 [[package]]
 name = "installed"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3c279161f63cb1cc6bbce67522c673341543aef1fbee41d817322e60d412e997"
+source = "git+https://github.com/MMitsuha/installed-rs.git#31c8ec96ed85df357d52ce5b6921b4386ee6107d"
 dependencies = [
  "once_cell",
  "plist",
