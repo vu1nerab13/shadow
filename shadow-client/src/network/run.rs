@@ -7,8 +7,18 @@ use shadow_common::{
     server::{self as ss, Server},
     ObjectType,
 };
-use std::{net::SocketAddrV4, sync::Arc};
+use std::{net::SocketAddr, sync::Arc};
 use tokio::{net::TcpStream, sync::RwLock, task::yield_now};
+
+pub struct Config {
+    addr: SocketAddr,
+}
+
+impl Config {
+    pub fn new(addr: SocketAddr) -> Self {
+        Self { addr }
+    }
+}
 
 fn run_server() -> AppResult<(Arc<RwLock<ClientObj>>, sc::ClientClient<codec::Bincode>)> {
     let client_obj = Arc::new(RwLock::new(ClientObj::new()));
@@ -29,11 +39,13 @@ async fn send_client(
     Ok(())
 }
 
-async fn connect_server() -> AppResult<(
+async fn connect_server(
+    addr: SocketAddr,
+) -> AppResult<(
     rch::base::Sender<ObjectType>,
     rch::base::Receiver<ObjectType>,
 )> {
-    let socket = TcpStream::connect("192.168.5.5:1244".parse::<SocketAddrV4>().unwrap()).await?;
+    let socket = TcpStream::connect(addr).await?;
     let (socket_rx, socket_tx) = socket.into_split();
     let (conn, tx, rx): (
         _,
@@ -73,9 +85,9 @@ async fn handle_connection(client: Arc<RwLock<ss::ServerClient<codec::Bincode>>>
     Ok(())
 }
 
-pub async fn run() -> AppResult<()> {
+pub async fn run(cfg: Config) -> AppResult<()> {
     let (client_obj, client_client) = run_server()?;
-    let (mut tx, mut rx) = connect_server().await?;
+    let (mut tx, mut rx) = connect_server(cfg.addr).await?;
 
     send_client(&mut tx, client_client).await?;
 

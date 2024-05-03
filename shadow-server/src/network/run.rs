@@ -74,7 +74,7 @@ async fn get_client(
             ObjectType::ClientClient(client_client) => Ok(client_client),
             ObjectType::ServerClient(_) => unreachable!(),
         },
-        None => todo!(),
+        None => unreachable!(),
     }
 }
 

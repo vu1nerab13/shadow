@@ -1,4 +1,4 @@
 mod run;
 mod server;
 
-pub use run::run;
+pub use run::{run, Config};
