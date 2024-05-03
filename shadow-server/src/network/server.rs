@@ -96,6 +96,12 @@ impl ServerObj {
 
         client.get_installed_apps().await
     }
+
+    pub async fn get_processes(&self) -> Result<Vec<sc::Process>, ShadowError> {
+        let client = self.get_client().await?;
+
+        client.get_processes().await
+    }
 }
 
 #[rtc::async_trait]

@@ -25,6 +25,16 @@ pub struct App {
     pub version: String,
 }
 
+#[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
+pub struct Process {
+    pub pid: u32,
+    pub parent_pid: Option<u32>,
+    pub name: String,
+    pub exe: String,
+    pub start_time: u64,
+    pub cwd: String,
+}
+
 #[rtc::remote]
 pub trait Client {
     async fn handshake(&self) -> Result<Handshake, ShadowError>;
@@ -42,4 +52,6 @@ pub trait Client {
     async fn system_sleep(&self) -> Result<bool, ShadowError>;
 
     async fn get_installed_apps(&self) -> Result<Vec<App>, ShadowError>;
+
+    async fn get_processes(&self) -> Result<Vec<Process>, ShadowError>;
 }

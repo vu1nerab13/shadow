@@ -29,6 +29,8 @@ enum ClientOperation {
     #[strum(ascii_case_insensitive)]
     GetApps,
     #[strum(ascii_case_insensitive)]
+    GetProcesses,
+    #[strum(ascii_case_insensitive)]
     Disconnect,
 }
 
@@ -142,6 +144,7 @@ async fn try_client_op(
             get_client_power(server_obj, SystemPowerAction::Hibernate).await
         }
         ClientOperation::GetApps => get_client_apps(server_obj).await,
+        ClientOperation::GetProcesses => get_client_processes(server_obj).await,
     }
 }
 
@@ -191,6 +194,21 @@ async fn get_client_apps(server_obj: &Arc<RwLock<ServerObj>>) -> AppResult<Box<d
     Ok(Box::new(reply::with_status(
         reply::json(&GetApps {
             apps: server_obj.read().await.get_installed_apps().await?,
+        }),
+        StatusCode::OK,
+    )))
+}
+
+/// Get client's processes
+async fn get_client_processes(server_obj: &Arc<RwLock<ServerObj>>) -> AppResult<Box<dyn Reply>> {
+    #[derive(Serialize, Deserialize)]
+    struct GetProcesses {
+        processes: Vec<sc::Process>,
+    }
+
+    Ok(Box::new(reply::with_status(
+        reply::json(&GetProcesses {
+            processes: server_obj.read().await.get_processes().await?,
         }),
         StatusCode::OK,
     )))

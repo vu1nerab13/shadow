@@ -1,7 +1,7 @@
 use crate::misc;
 use remoc::{codec, prelude::*};
 use shadow_common::{client as sc, error::ShadowError, server as ss};
-use std::sync::Arc;
+use std::{path::Path, sync::Arc};
 use sysinfo::{Components, Disks, Networks, System};
 use tokio::sync::RwLock;
 
@@ -114,5 +114,38 @@ impl sc::Client for ClientObj {
                 .collect()),
             Err(e) => Err(ShadowError::QueryAppsError(e.to_string())),
         }
+    }
+
+    async fn get_processes(&self) -> Result<Vec<sc::Process>, ShadowError> {
+        let mut system = System::new();
+        system.refresh_processes();
+
+        Ok(system
+            .processes()
+            .iter()
+            .map(|(pid, process)| {
+                let parent_pid = match process.parent() {
+                    Some(p) => Some(p.as_u32()),
+                    None => None,
+                };
+
+                sc::Process {
+                    pid: pid.as_u32(),
+                    name: process.name().into(),
+                    parent_pid,
+                    exe: process
+                        .exe()
+                        .unwrap_or(Path::new(""))
+                        .to_string_lossy()
+                        .to_string(),
+                    start_time: process.start_time(),
+                    cwd: process
+                        .cwd()
+                        .unwrap_or(Path::new(""))
+                        .to_string_lossy()
+                        .to_string(),
+                }
+            })
+            .collect())
     }
 }
