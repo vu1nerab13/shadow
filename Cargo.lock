@@ -1680,7 +1680,7 @@ dependencies = [
 
 [[package]]
 name = "shadow-client"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "anyhow",
  "bincode",
@@ -1697,7 +1697,7 @@ dependencies = [
 
 [[package]]
 name = "shadow-common"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "installed",
  "remoc",
@@ -1709,7 +1709,7 @@ dependencies = [
 
 [[package]]
 name = "shadow-server"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "anyhow",
  "bincode",
