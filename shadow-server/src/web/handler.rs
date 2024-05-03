@@ -50,31 +50,30 @@ pub async fn client_operation(
         error: error::WebError,
     }
 
-    let (reply, status) = match match ServerOperation::from_str(&addr) {
+    let reply = match match ServerOperation::from_str(&addr) {
         Ok(o) => match o {
             ServerOperation::Query => query_clients(server_objs, op).await,
         },
         Err(_) => try_client_op(addr, op, server_objs).await,
     } {
         Ok(v) => v,
-        Err(e) => (
-            serde_json::to_string(&UnknownError {
+        Err(e) => Box::new(reply::with_status(
+            reply::json(&UnknownError {
                 message: e.to_string(),
                 error: error::WebError::UnknownError,
-            })
-            .unwrap_or_default(),
+            }),
             StatusCode::INTERNAL_SERVER_ERROR,
-        ),
+        )),
     };
 
-    Ok(reply::with_status(reply, status))
+    Ok(reply)
 }
 
 /// Query all clients that connected to the server
 async fn query_clients(
     server_objs: Arc<RwLock<HashMap<SocketAddr, Arc<RwLock<ServerObj>>>>>,
     _op: Option<String>,
-) -> AppResult<(String, StatusCode)> {
+) -> AppResult<Box<dyn Reply>> {
     #[derive(Serialize, Deserialize)]
     struct Query {
         count: usize,
@@ -83,16 +82,16 @@ async fn query_clients(
 
     let server_objs = server_objs.read().await;
 
-    Ok((
-        serde_json::to_string(&Query {
+    Ok(Box::new(reply::with_status(
+        reply::json(&Query {
             count: server_objs.len(),
             peers: server_objs
                 .keys()
                 .map(|addr: &SocketAddr| addr.to_string())
                 .collect(),
-        })?,
+        }),
         StatusCode::OK,
-    ))
+    )))
 }
 
 /// Try to perform a operation on a specific client
@@ -100,7 +99,7 @@ async fn try_client_op(
     addr: String,
     op: Option<String>,
     server_objs: Arc<RwLock<HashMap<SocketAddr, Arc<RwLock<ServerObj>>>>>,
-) -> AppResult<(String, StatusCode)> {
+) -> AppResult<Box<dyn Reply>> {
     #[derive(Serialize, Deserialize)]
     struct QueryClient {
         error: error::WebError,
@@ -109,24 +108,24 @@ async fn try_client_op(
     let op = match op {
         Some(o) => ClientOperation::from_str(&o)?,
         None => {
-            return Ok((
-                serde_json::to_string(&QueryClient {
+            return Ok(Box::new(reply::with_status(
+                reply::json(&QueryClient {
                     error: error::WebError::NoOp,
-                })?,
+                }),
                 StatusCode::BAD_REQUEST,
-            ))
+            )))
         }
     };
     let lock = server_objs.read().await;
     let server_obj = match lock.get(&addr.parse()?) {
         Some(c) => c,
         None => {
-            return Ok((
-                serde_json::to_string(&QueryClient {
+            return Ok(Box::new(reply::with_status(
+                reply::json(&QueryClient {
                     error: error::WebError::ClientNotFound,
-                })?,
+                }),
                 StatusCode::NOT_FOUND,
-            ))
+            )))
         }
     };
 
@@ -147,27 +146,25 @@ async fn try_client_op(
 }
 
 /// Get a client's summary
-async fn get_client_summary(
-    server_obj: &Arc<RwLock<ServerObj>>,
-) -> AppResult<(String, StatusCode)> {
+async fn get_client_summary(server_obj: &Arc<RwLock<ServerObj>>) -> AppResult<Box<dyn Reply>> {
     #[derive(Serialize, Deserialize)]
     struct GetSummary {
         summary: String,
     }
 
-    Ok((
-        serde_json::to_string(&GetSummary {
+    Ok(Box::new(reply::with_status(
+        reply::json(&GetSummary {
             summary: server_obj.read().await.summary(),
-        })?,
+        }),
         StatusCode::OK,
-    ))
+    )))
 }
 
 /// Let a client to shutdown
 async fn get_client_power(
     server_obj: &Arc<RwLock<ServerObj>>,
     action: SystemPowerAction,
-) -> AppResult<(String, StatusCode)> {
+) -> AppResult<Box<dyn Reply>> {
     #[derive(Serialize, Deserialize)]
     struct Shutdown {
         error: error::WebError,
@@ -178,28 +175,29 @@ async fn get_client_power(
         false => error::WebError::UnknownError,
     };
 
-    Ok((serde_json::to_string(&Shutdown { error })?, StatusCode::OK))
+    Ok(Box::new(reply::with_status(
+        reply::json(&Shutdown { error }),
+        StatusCode::OK,
+    )))
 }
 
 /// Get client's apps
-async fn get_client_apps(server_obj: &Arc<RwLock<ServerObj>>) -> AppResult<(String, StatusCode)> {
+async fn get_client_apps(server_obj: &Arc<RwLock<ServerObj>>) -> AppResult<Box<dyn Reply>> {
     #[derive(Serialize, Deserialize)]
     struct GetApps {
         apps: Vec<sc::App>,
     }
 
-    Ok((
-        serde_json::to_string(&GetApps {
+    Ok(Box::new(reply::with_status(
+        reply::json(&GetApps {
             apps: server_obj.read().await.get_installed_apps().await?,
-        })?,
+        }),
         StatusCode::OK,
-    ))
+    )))
 }
 
 /// Disconnect a client
-async fn get_client_disconnect(
-    server_obj: &Arc<RwLock<ServerObj>>,
-) -> AppResult<(String, StatusCode)> {
+async fn get_client_disconnect(server_obj: &Arc<RwLock<ServerObj>>) -> AppResult<Box<dyn Reply>> {
     #[derive(Serialize, Deserialize)]
     struct Shutdown {
         error: error::WebError,
@@ -210,5 +208,8 @@ async fn get_client_disconnect(
         false => error::WebError::UnknownError,
     };
 
-    Ok((serde_json::to_string(&Shutdown { error })?, StatusCode::OK))
+    Ok(Box::new(reply::with_status(
+        reply::json(&Shutdown { error }),
+        StatusCode::OK,
+    )))
 }
