@@ -10,7 +10,7 @@ async fn main() -> AppResult<()> {
     Logger::try_with_str("trace")?.start()?;
 
     // Server config
-    let server_cfg = network::Config::new("192.168.5.5:1244".parse()?);
+    let server_cfg = network::Config::new("127.0.0.1:1244".parse()?);
     network::run(server_cfg).await?;
 
     Ok(())

@@ -12,6 +12,9 @@ pub enum WebError {
     #[error("no operation provided")]
     NoOp,
 
+    #[error("address is invalid")]
+    AddressInvalid,
+
     #[error("unknown error")]
     UnknownError,
 }

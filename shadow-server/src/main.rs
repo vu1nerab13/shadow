@@ -15,7 +15,7 @@ async fn main() -> AppResult<()> {
     // Server config
     let server_cfg = network::Config::new("0.0.0.0:1244".parse()?);
     // Web interface config
-    let web_cfg = web::Config::new("0.0.0.0:5000".parse()?);
+    let web_cfg = web::Config::new("0.0.0.0:9000".parse()?);
 
     // Start the server
     let server = tokio::spawn(network::run(server_cfg, server_objs.clone()));

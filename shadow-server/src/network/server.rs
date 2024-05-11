@@ -54,6 +54,7 @@ impl ServerObj {
         }
     }
 
+    /// Get the client instance which connected to the server
     async fn get_client(
         &self,
     ) -> Result<RwLockReadGuard<sc::ClientClient<codec::Bincode>>, ShadowError> {
@@ -73,6 +74,7 @@ impl ServerObj {
             None => return false,
         };
 
+        // Abort this task
         task.abort();
 
         true
@@ -92,15 +94,11 @@ impl ServerObj {
     }
 
     pub async fn get_installed_apps(&self) -> Result<Vec<sc::App>, ShadowError> {
-        let client = self.get_client().await?;
-
-        client.get_installed_apps().await
+        self.get_client().await?.get_installed_apps().await
     }
 
     pub async fn get_processes(&self) -> Result<Vec<sc::Process>, ShadowError> {
-        let client = self.get_client().await?;
-
-        client.get_processes().await
+        self.get_client().await?.get_processes().await
     }
 }
 

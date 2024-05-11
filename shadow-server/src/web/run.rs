@@ -1,9 +1,9 @@
 use crate::network::ServerObj;
-use crate::web::handler;
+use crate::web::v1;
 use anyhow::Result;
 use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 use tokio::sync::RwLock;
-use warp::{path, Filter};
+use warp::{filters::query, path, Filter};
 
 pub struct Config {
     addr: SocketAddr,
@@ -22,25 +22,25 @@ pub async fn run(
     // Root page
     let root = path::end().map(|| "Welcome to shadow server!");
 
-    // A optional param
-    let optional = warp::path::param::<String>()
-        .map(Some)
-        .or_else(|_| async { Ok::<(Option<String>,), std::convert::Infallible>((None,)) });
-
-    // The request on a specific client should look like `<address>/client/<client_address>/<client_operation>`
-    // Where `client_operation` could be `summary` or `shutdown` etc.
-    // And request on the server itself looks like `<address>/client/<server_operation>`
-    // Where `client_operation` could be `query` to query all clients connected to the server
-    let client = warp::path("client")
-        .and(path::param())
-        .and(optional)
+    // V1 api
+    let server_objs_c = server_objs.clone();
+    let v1_client = warp::path("v1")
+        .and(warp::path("client"))
         .and(path::end())
-        .and(warp::get())
-        .and_then(move |addr: String, op: Option<String>| {
-            handler::client_operation(addr, op, server_objs.clone())
-        });
+        .and(query::query::<v1::ClientParam>())
+        .and_then(move |param: v1::ClientParam| v1::client_request(param, server_objs_c.clone()));
 
-    let routes = root.or(client).with(warp::cors().allow_any_origin());
+    let server_objs_s = server_objs.clone();
+    let v1_server = warp::path("v1")
+        .and(warp::path("server"))
+        .and(path::end())
+        .and(query::query::<v1::ServerParam>())
+        .and_then(move |param: v1::ServerParam| v1::server_request(param, server_objs_s.clone()));
+
+    let routes = root
+        .or(v1_client)
+        .or(v1_server)
+        .with(warp::cors().allow_any_origin());
 
     warp::serve(routes).run(cfg.addr).await;
 
