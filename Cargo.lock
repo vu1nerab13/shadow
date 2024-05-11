@@ -981,8 +981,8 @@ dependencies = [
 
 [[package]]
 name = "installed"
-version = "0.1.0"
-source = "git+https://github.com/MMitsuha/installed-rs.git#31c8ec96ed85df357d52ce5b6921b4386ee6107d"
+version = "0.2.0"
+source = "git+https://github.com/MMitsuha/installed-rs.git#6f7c7744e205a23f57f53741b34c6523c9dfe630"
 dependencies = [
  "once_cell",
  "plist",
