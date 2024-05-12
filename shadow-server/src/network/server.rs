@@ -100,6 +100,13 @@ impl ServerObj {
     pub async fn get_processes(&self) -> Result<Vec<sc::Process>, ShadowError> {
         self.get_client().await?.get_processes().await
     }
+
+    pub async fn get_file_list<S: AsRef<str>>(&self, dir: S) -> Result<Vec<sc::File>, ShadowError> {
+        self.get_client()
+            .await?
+            .get_file_list(dir.as_ref().into())
+            .await
+    }
 }
 
 #[rtc::async_trait]

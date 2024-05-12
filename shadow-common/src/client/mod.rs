@@ -35,6 +35,12 @@ pub struct Process {
     pub cwd: String,
 }
 
+#[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
+pub struct File {
+    pub name: String,
+    pub is_dir: bool,
+}
+
 #[rtc::remote]
 pub trait Client {
     async fn handshake(&self) -> Result<Handshake, ShadowError>;
@@ -54,4 +60,6 @@ pub trait Client {
     async fn get_installed_apps(&self) -> Result<Vec<App>, ShadowError>;
 
     async fn get_processes(&self) -> Result<Vec<Process>, ShadowError>;
+
+    async fn get_file_list(&self, dir: String) -> Result<Vec<File>, ShadowError>;
 }

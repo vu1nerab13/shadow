@@ -35,6 +35,8 @@ enum ClientOperation {
     #[strum(ascii_case_insensitive)]
     GetProcesses,
     #[strum(ascii_case_insensitive)]
+    GetFileList,
+    #[strum(ascii_case_insensitive)]
     Disconnect,
 }
 
@@ -77,7 +79,7 @@ pub async fn client_request(
     };
 
     let reply = match ClientOperation::from_str(&param.op) {
-        Ok(op) => match client_op(op, server_obj).await {
+        Ok(op) => match client_op(server_obj, op, param).await {
             Ok(v) => v,
             Err(e) => Box::new(reply::with_status(
                 reply::json(&DispatchError {
@@ -101,8 +103,9 @@ pub async fn client_request(
 
 /// Try to perform a operation on a specific client
 async fn client_op(
-    op: ClientOperation,
     server_obj: &Arc<RwLock<ServerObj>>,
+    op: ClientOperation,
+    _param: ClientParam,
 ) -> AppResult<Box<dyn Reply>> {
     match op {
         ClientOperation::Summary => get_client_summary(server_obj).await,
@@ -118,6 +121,8 @@ async fn client_op(
         }
         ClientOperation::GetApps => get_client_apps(server_obj).await,
         ClientOperation::GetProcesses => get_client_processes(server_obj).await,
+        ClientOperation::GetFileList => todo!(),
+        // ClientOperation::GetFileList => get_client_file_list(server_obj, param).await,
     }
 }
 
@@ -204,3 +209,38 @@ async fn get_client_disconnect(server_obj: &Arc<RwLock<ServerObj>>) -> AppResult
         StatusCode::OK,
     )))
 }
+
+// async fn get_client_file_list(
+//     server_obj: &Arc<RwLock<ServerObj>>,
+//     param: ClientParam,
+// ) -> AppResult<Box<dyn Reply>> {
+//     #[derive(Serialize, Deserialize)]
+//     struct GetFileList {
+//         list: Vec<sc::File>,
+//         message: String,
+//         error: WebError,
+//     }
+
+//     let dir = match param.path {
+//         Some(p) => p,
+//         None => {
+//             return Ok(Box::new(reply::with_status(
+//                 reply::json(&GetFileList {
+//                     list: Vec::new(),
+//                     message: "no path provided".into(),
+//                     error: error::WebError::ParamInvalid,
+//                 }),
+//                 StatusCode::BAD_REQUEST,
+//             )))
+//         }
+//     };
+
+//     Ok(Box::new(reply::with_status(
+//         reply::json(&GetFileList {
+//             list: server_obj.read().await.get_file_list(dir).await?,
+//             message: "".into(),
+//             error: error::WebError::Success,
+//         }),
+//         StatusCode::OK,
+//     )))
+// }

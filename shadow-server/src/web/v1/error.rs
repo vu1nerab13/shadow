@@ -17,4 +17,7 @@ pub enum WebError {
 
     #[error("unknown error")]
     UnknownError,
+
+    #[error("param is invalid")]
+    ParamInvalid,
 }

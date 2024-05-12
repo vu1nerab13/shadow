@@ -3,7 +3,7 @@ use remoc::{codec, prelude::*};
 use shadow_common::{client as sc, error::ShadowError, server as ss};
 use std::{path::Path, sync::Arc};
 use sysinfo::{Components, Disks, Networks, System};
-use tokio::sync::RwLock;
+use tokio::{fs, sync::RwLock};
 
 #[allow(dead_code)]
 #[derive(Debug)]
@@ -147,5 +147,34 @@ impl sc::Client for ClientObj {
                 }
             })
             .collect())
+    }
+
+    async fn get_file_list(&self, dir: String) -> Result<Vec<sc::File>, ShadowError> {
+        let mut ret = Vec::new();
+        let mut list = match fs::read_dir(&dir).await {
+            Ok(l) => l,
+            Err(e) => return Err(ShadowError::QueryFilesError(dir, e.to_string())),
+        };
+
+        while let Some(f) = match list.next_entry().await {
+            Ok(e) => e,
+            Err(e) => return Err(ShadowError::QueryFilesError(dir, e.to_string())),
+        } {
+            let name = match f.file_name().into_string() {
+                Ok(n) => n,
+                Err(_) => continue,
+            };
+            let file_type = match f.file_type().await {
+                Ok(t) => t,
+                Err(_) => continue,
+            };
+
+            ret.push(sc::File {
+                name,
+                is_dir: file_type.is_dir(),
+            });
+        }
+
+        Ok(ret)
     }
 }

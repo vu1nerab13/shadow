@@ -14,6 +14,9 @@ pub enum ShadowError {
 
     #[error("can not list installed apps, message: {0}")]
     QueryAppsError(String),
+
+    #[error("can not list directory: {0}, message: {1}")]
+    QueryFilesError(String, String),
 }
 
 impl From<CallError> for ShadowError {
