@@ -7,8 +7,8 @@ use shadow_common::{
     server::{self as ss, Server},
     ObjectType,
 };
-use std::{net::SocketAddr, sync::Arc};
-use tokio::{net::TcpStream, sync::RwLock, task::yield_now};
+use std::{net::SocketAddr, sync::Arc, time::Duration};
+use tokio::{net::TcpStream, sync::RwLock, time::sleep};
 
 pub struct Config {
     addr: SocketAddr,
@@ -78,7 +78,7 @@ async fn handle_connection(client: Arc<RwLock<ss::ServerClient<codec::Bincode>>>
     loop {
         match client.is_closed() {
             true => break,
-            false => yield_now().await,
+            false => sleep(Duration::from_secs(10)).await,
         }
     }
 
