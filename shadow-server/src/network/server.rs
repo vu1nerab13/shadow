@@ -55,7 +55,7 @@ impl ServerObj {
     }
 
     /// Get the client instance which connected to the server
-    async fn get_client(
+    pub async fn get_client(
         &self,
     ) -> Result<RwLockReadGuard<sc::ClientClient<codec::Bincode>>, ShadowError> {
         match &self.client {
