@@ -1,6 +1,7 @@
 use crate::misc;
 use log::trace;
 use remoc::{chmux::ChMuxError, codec, prelude::*};
+use serde::{Deserialize, Serialize};
 use shadow_common::{
     client::{self as sc, Client},
     error::ShadowError,
@@ -13,7 +14,7 @@ use tokio::{
 };
 
 #[allow(dead_code)]
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ServerCfg {
     version: String,
 }
@@ -65,7 +66,7 @@ impl ServerObj {
     }
 
     pub fn summary(&self) -> String {
-        format!("{:?}", self)
+        format!("{:?}", serde_json::to_string(&self.info))
     }
 
     pub fn disconnect(&self) -> bool {
