@@ -87,15 +87,10 @@ async fn query(
 }
 
 async fn summarize_client(server_obj: &Arc<RwLock<ServerObj>>) -> Response<Box<dyn Reply>> {
-    #[derive(Serialize, Deserialize)]
-    struct Summary {
-        summary: String,
-    }
-
     Ok(Box::new(reply::with_status(
-        reply::json(&Summary {
-            summary: server_obj.read().await.summary(),
-        }),
+        reply::json(
+            &server_obj.read().await.summary(),
+        ),
         StatusCode::OK,
     )))
 }
