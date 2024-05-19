@@ -3,7 +3,7 @@ use crate::web::v1;
 use anyhow::Result;
 use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 use tokio::sync::RwLock;
-use warp::{filters::query, path, Filter};
+use warp::{path, Filter};
 
 pub struct Config {
     addr: SocketAddr,

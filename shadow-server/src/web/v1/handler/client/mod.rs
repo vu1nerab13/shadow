@@ -6,7 +6,7 @@ use std::{collections::HashMap, net::SocketAddr, str::FromStr, sync::Arc};
 use strum_macros::EnumString;
 use tokio::sync::RwLock;
 use warp::{
-    filters::{any, path::param, query, BoxedFilter},
+    filters::{any, query, BoxedFilter},
     http::StatusCode,
     path,
     reject::Rejection,
