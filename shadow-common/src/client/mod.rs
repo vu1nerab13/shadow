@@ -6,7 +6,7 @@ pub struct Handshake {
     pub message: String,
 }
 
-#[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct SystemInfo {
     pub system_name: String,
     pub kernel_version: String,

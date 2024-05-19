@@ -1,7 +1,7 @@
 use super::super::error::{self, Error};
 use crate::network::ServerObj;
 use serde::{Deserialize, Serialize};
-use shadow_common::client::{App, Process};
+use shadow_common::client::{App, Process, SystemInfo};
 use std::{collections::HashMap, net::SocketAddr, str::FromStr, sync::Arc};
 use strum_macros::EnumString;
 use tokio::sync::RwLock;
@@ -89,7 +89,7 @@ async fn query(
 async fn summarize_client(server_obj: &Arc<RwLock<ServerObj>>) -> Response<Box<dyn Reply>> {
     #[derive(Serialize, Deserialize)]
     struct Summary {
-        summary: String,
+        summary: SystemInfo,
     }
 
     Ok(Box::new(reply::with_status(

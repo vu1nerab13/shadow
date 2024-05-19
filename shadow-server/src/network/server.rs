@@ -65,8 +65,8 @@ impl ServerObj {
         }
     }
 
-    pub fn summary(&self) -> String {
-        format!("{:?}", serde_json::to_string(&self.info))
+    pub fn summary(&self) -> sc::SystemInfo {
+        self.info.clone()
     }
 
     pub fn disconnect(&self) -> bool {
