@@ -21,3 +21,9 @@ pub enum WebError {
     #[error("param is invalid")]
     ParamInvalid,
 }
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Error {
+    pub error: WebError,
+    pub message: String,
+}

@@ -8,7 +8,7 @@ use tokio::sync::RwLock;
 async fn main() -> AppResult<()> {
     // Start logging
     #[cfg(debug_assertions)]
-    Logger::try_with_str("trace")?.start()?;
+    Logger::try_with_str("debug")?.start()?;
 
     // A instance representing all clients connected to the server
     let server_objs = Arc::new(RwLock::new(HashMap::new()));

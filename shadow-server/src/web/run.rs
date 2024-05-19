@@ -22,27 +22,9 @@ pub async fn run(
     // Root page
     let root = path::end().map(|| "Welcome to shadow server!");
 
-    // V1 api
-    let server_objs_c = server_objs.clone();
-    let v1_client = warp::path("v1")
-        .and(warp::path("client"))
-        .and(path::end())
-        .and(query::query::<v1::ClientParam>())
-        .and_then(move |param: v1::ClientParam| v1::client_request(param, server_objs_c.clone()));
+    let v1_api = v1::setup_routes(server_objs.clone());
 
-    let server_objs_s = server_objs.clone();
-    let v1_server = warp::path("v1")
-        .and(warp::path("server"))
-        .and(path::end())
-        .and(query::query::<v1::ServerParam>())
-        .and_then(move |param: v1::ServerParam| v1::server_request(param, server_objs_s.clone()));
-
-    let routes = root
-        .or(v1_client)
-        .or(v1_server)
-        .with(warp::cors().allow_any_origin());
-
-    warp::serve(routes).run(cfg.addr).await;
+    warp::serve(root.or(v1_api)).run(cfg.addr).await;
 
     Ok(())
 }
