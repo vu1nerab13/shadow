@@ -1,8 +1,12 @@
 use crate::misc;
 use remoc::{codec, prelude::*};
-use shadow_common::{client as sc, error::ShadowError, server as ss};
+use shadow_common::{
+    client::{self as sc, SystemPowerAction},
+    error::ShadowError,
+    server as ss,
+};
 use std::{path::Path, sync::Arc};
-use sysinfo::{Components, Disks, Networks, System};
+use sysinfo::System;
 use tokio::{fs, sync::RwLock};
 
 #[allow(dead_code)]
@@ -58,36 +62,14 @@ impl sc::Client for ClientObj {
         })
     }
 
-    async fn system_shutdown(&self) -> Result<bool, ShadowError> {
-        match system_shutdown::shutdown() {
-            Ok(_) => Ok(true),
-            Err(_) => Err(ShadowError::SystemPowerError),
-        }
-    }
-
-    async fn system_logout(&self) -> Result<bool, ShadowError> {
-        match system_shutdown::logout() {
-            Ok(_) => Ok(true),
-            Err(_) => Err(ShadowError::SystemPowerError),
-        }
-    }
-
-    async fn system_reboot(&self) -> Result<bool, ShadowError> {
-        match system_shutdown::reboot() {
-            Ok(_) => Ok(true),
-            Err(_) => Err(ShadowError::SystemPowerError),
-        }
-    }
-
-    async fn system_hibernate(&self) -> Result<bool, ShadowError> {
-        match system_shutdown::hibernate() {
-            Ok(_) => Ok(true),
-            Err(_) => Err(ShadowError::SystemPowerError),
-        }
-    }
-
-    async fn system_sleep(&self) -> Result<bool, ShadowError> {
-        match system_shutdown::sleep() {
+    async fn system_power(&self, action: SystemPowerAction) -> Result<bool, ShadowError> {
+        match match action {
+            SystemPowerAction::Shutdown => system_shutdown::shutdown(),
+            SystemPowerAction::Reboot => system_shutdown::reboot(),
+            SystemPowerAction::Logout => system_shutdown::logout(),
+            SystemPowerAction::Sleep => system_shutdown::sleep(),
+            SystemPowerAction::Hibernate => system_shutdown::hibernate(),
+        } {
             Ok(_) => Ok(true),
             Err(_) => Err(ShadowError::SystemPowerError),
         }

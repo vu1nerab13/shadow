@@ -3,7 +3,7 @@ use log::trace;
 use remoc::{chmux::ChMuxError, codec, prelude::*};
 use serde::{Deserialize, Serialize};
 use shadow_common::{
-    client::{self as sc, Client},
+    client::{self as sc, Client, SystemPowerAction},
     error::ShadowError,
     server as ss,
 };
@@ -34,14 +34,6 @@ pub struct ServerObj {
     pub addr: SocketAddr,
     pub info: sc::SystemInfo,
     pub task: Option<JoinHandle<Result<(), ChMuxError<std::io::Error, std::io::Error>>>>,
-}
-
-pub enum SystemPowerAction {
-    Shutdown,
-    Reboot,
-    Logout,
-    Sleep,
-    Hibernate,
 }
 
 impl ServerObj {
@@ -82,16 +74,7 @@ impl ServerObj {
     }
 
     pub async fn system_power(&self, action: SystemPowerAction) -> Result<bool, ShadowError> {
-        let client = self.get_client().await?;
-
-        match action {
-            SystemPowerAction::Shutdown => client.system_shutdown(),
-            SystemPowerAction::Reboot => client.system_reboot(),
-            SystemPowerAction::Logout => client.system_logout(),
-            SystemPowerAction::Sleep => client.system_sleep(),
-            SystemPowerAction::Hibernate => client.system_hibernate(),
-        }
-        .await
+        self.get_client().await?.system_power(action).await
     }
 
     pub async fn get_installed_apps(&self) -> Result<Vec<sc::App>, ShadowError> {

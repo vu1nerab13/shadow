@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::error::ShadowError;
 use remoc::prelude::*;
 
@@ -39,21 +37,22 @@ pub struct File {
     pub is_dir: bool,
 }
 
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub enum SystemPowerAction {
+    Shutdown,
+    Reboot,
+    Logout,
+    Sleep,
+    Hibernate,
+}
+
 #[rtc::remote]
 pub trait Client {
     async fn handshake(&self) -> Result<Handshake, ShadowError>;
 
     async fn get_system_info(&self) -> Result<SystemInfo, ShadowError>;
 
-    async fn system_shutdown(&self) -> Result<bool, ShadowError>;
-
-    async fn system_logout(&self) -> Result<bool, ShadowError>;
-
-    async fn system_reboot(&self) -> Result<bool, ShadowError>;
-
-    async fn system_hibernate(&self) -> Result<bool, ShadowError>;
-
-    async fn system_sleep(&self) -> Result<bool, ShadowError>;
+    async fn system_power(&self, action: SystemPowerAction) -> Result<bool, ShadowError>;
 
     async fn get_installed_apps(&self) -> Result<Vec<App>, ShadowError>;
 
