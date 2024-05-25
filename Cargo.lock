@@ -1702,6 +1702,8 @@ dependencies = [
  "installed",
  "remoc",
  "serde",
+ "strum",
+ "strum_macros",
  "sysinfo",
  "thiserror",
  "uuid",

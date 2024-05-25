@@ -1,5 +1,6 @@
 use crate::error::ShadowError;
 use remoc::prelude::*;
+use strum_macros::EnumString;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct Handshake {
@@ -37,12 +38,17 @@ pub struct File {
     pub is_dir: bool,
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(EnumString, Debug, serde::Serialize, serde::Deserialize)]
 pub enum SystemPowerAction {
+    #[strum(ascii_case_insensitive)]
     Shutdown,
+    #[strum(ascii_case_insensitive)]
     Reboot,
+    #[strum(ascii_case_insensitive)]
     Logout,
+    #[strum(ascii_case_insensitive)]
     Sleep,
+    #[strum(ascii_case_insensitive)]
     Hibernate,
 }
 
