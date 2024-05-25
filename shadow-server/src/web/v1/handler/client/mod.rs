@@ -1,7 +1,6 @@
 use super::super::error::{self, Error};
 use crate::network::ServerObj;
 use serde::{Deserialize, Serialize};
-use shadow_common::client::{App, Process, SystemInfo};
 use std::{collections::HashMap, net::SocketAddr, str::FromStr, sync::Arc};
 use strum_macros::EnumString;
 use tokio::sync::RwLock;
@@ -87,25 +86,13 @@ async fn query(
 }
 
 async fn summarize_client(server_obj: &Arc<RwLock<ServerObj>>) -> Response<Box<dyn Reply>> {
-    #[derive(Serialize, Deserialize)]
-    struct Summary {
-        summary: SystemInfo,
-    }
-
     Ok(Box::new(reply::with_status(
-        reply::json(&Summary {
-            summary: server_obj.read().await.summary(),
-        }),
+        reply::json(&server_obj.read().await.summary()),
         StatusCode::OK,
     )))
 }
 
 async fn get_client_apps(server_obj: &Arc<RwLock<ServerObj>>) -> Response<Box<dyn Reply>> {
-    #[derive(Serialize, Deserialize)]
-    struct Apps {
-        apps: Vec<App>,
-    }
-
     let apps = match server_obj.read().await.get_installed_apps().await {
         Ok(a) => a,
         Err(e) => {
@@ -120,17 +107,12 @@ async fn get_client_apps(server_obj: &Arc<RwLock<ServerObj>>) -> Response<Box<dy
     };
 
     Ok(Box::new(reply::with_status(
-        reply::json(&Apps { apps }),
+        reply::json(&apps),
         StatusCode::OK,
     )))
 }
 
 async fn get_client_processes(server_obj: &Arc<RwLock<ServerObj>>) -> Response<Box<dyn Reply>> {
-    #[derive(Serialize, Deserialize)]
-    struct Processes {
-        processes: Vec<Process>,
-    }
-
     let processes = match server_obj.read().await.get_processes().await {
         Ok(p) => p,
         Err(e) => {
@@ -145,7 +127,7 @@ async fn get_client_processes(server_obj: &Arc<RwLock<ServerObj>>) -> Response<B
     };
 
     Ok(Box::new(reply::with_status(
-        reply::json(&Processes { processes }),
+        reply::json(&processes),
         StatusCode::OK,
     )))
 }
