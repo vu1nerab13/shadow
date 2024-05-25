@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::error::ShadowError;
 use remoc::prelude::*;
 
@@ -12,10 +14,6 @@ pub struct SystemInfo {
     pub kernel_version: String,
     pub os_version: String,
     pub host_name: String,
-    pub components: String,
-    pub disks: String,
-    pub networks: String,
-    pub system: String,
 }
 
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]

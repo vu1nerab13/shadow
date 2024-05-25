@@ -50,20 +50,11 @@ impl sc::Client for ClientObj {
         let os_version = System::os_version().unwrap_or_default();
         let host_name = System::host_name().unwrap_or_default();
 
-        let system = format!("{:?}", system);
-        let disks = format!("{:?}", Disks::new_with_refreshed_list());
-        let networks = format!("{:?}", Networks::new_with_refreshed_list());
-        let components = format!("{:?}", Components::new_with_refreshed_list());
-
         Ok(sc::SystemInfo {
             system_name,
             kernel_version,
             os_version,
             host_name,
-            components,
-            disks,
-            networks,
-            system,
         })
     }
 
