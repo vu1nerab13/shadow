@@ -1,5 +1,6 @@
 use super::super::error::{self, Error};
 use crate::network::ServerObj;
+use anyhow::Result as AppResult;
 use serde::{Deserialize, Serialize};
 use shadow_common::client::SystemPowerAction;
 use std::{collections::HashMap, net::SocketAddr, str::FromStr, sync::Arc};
@@ -24,6 +25,14 @@ enum QueryOperation {
     Apps,
     #[strum(ascii_case_insensitive)]
     Processes,
+    #[strum(ascii_case_insensitive)]
+    Displays,
+}
+
+#[derive(EnumString, Deserialize, Serialize)]
+enum FileOperation {
+    #[strum(ascii_case_insensitive)]
+    Enumerate,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -31,9 +40,104 @@ struct QueryParameter {
     op: String,
 }
 
+impl Parameter for QueryParameter {
+    type Operation = QueryOperation;
+
+    fn operation(&self) -> AppResult<Self::Operation> {
+        Ok(Self::Operation::from_str(&self.op)?)
+    }
+
+    async fn dispatch(
+        &self,
+        op: Self::Operation,
+        server_obj: Arc<RwLock<ServerObj>>,
+    ) -> Response<Box<dyn Reply>> {
+        match op {
+            QueryOperation::Summary => summarize_client(server_obj).await,
+            QueryOperation::Apps => get_client_apps(server_obj).await,
+            QueryOperation::Processes => get_client_processes(server_obj).await,
+            QueryOperation::Displays => get_client_displays(server_obj).await,
+        }
+    }
+}
+
 #[derive(Deserialize, Serialize)]
 struct PowerParameter {
     op: String,
+}
+
+impl Parameter for PowerParameter {
+    type Operation = SystemPowerAction;
+
+    fn operation(&self) -> AppResult<Self::Operation> {
+        Ok(Self::Operation::from_str(&self.op)?)
+    }
+
+    async fn dispatch(
+        &self,
+        op: Self::Operation,
+        server_obj: Arc<RwLock<ServerObj>>,
+    ) -> Response<Box<dyn Reply>> {
+        let (message, error) = match server_obj.read().await.system_power(op).await {
+            Ok(b) => match b {
+                true => ("".into(), error::WebError::Success),
+                false => ("".into(), error::WebError::UnknownError),
+            },
+            Err(e) => (e.to_string(), error::WebError::UnknownError),
+        };
+
+        return Ok(Box::new(reply::with_status(
+            reply::json(&Error { message, error }),
+            StatusCode::OK,
+        )));
+    }
+}
+
+trait Parameter {
+    type Operation;
+
+    fn operation(&self) -> AppResult<Self::Operation>;
+
+    async fn dispatch(
+        &self,
+        op: Self::Operation,
+        server_obj: Arc<RwLock<ServerObj>>,
+    ) -> Response<Box<dyn Reply>>;
+
+    async fn run(
+        &self,
+        addr: SocketAddr,
+        server_objs: Arc<RwLock<HashMap<SocketAddr, Arc<RwLock<ServerObj>>>>>,
+    ) -> Response<Box<dyn Reply>> {
+        let op = match self.operation() {
+            Ok(o) => o,
+            Err(e) => {
+                return Ok(Box::new(reply::with_status(
+                    reply::json(&Error {
+                        error: error::WebError::NoOp,
+                        message: e.to_string(),
+                    }),
+                    StatusCode::OK,
+                )))
+            }
+        };
+
+        let lock = server_objs.read().await;
+        let server_obj = match lock.get(&addr) {
+            Some(o) => o.clone(),
+            None => {
+                return Ok(Box::new(reply::with_status(
+                    reply::json(&Error {
+                        message: addr.to_string(),
+                        error: error::WebError::ClientNotFound,
+                    }),
+                    StatusCode::OK,
+                )))
+            }
+        };
+
+        self.dispatch(op, server_obj).await
+    }
 }
 
 pub fn setup_routes(
@@ -47,112 +151,39 @@ pub fn setup_routes(
         .and(warp::get())
         .and(path!("query"))
         .and(path::end())
-        .and(query::query())
-        .and_then(query);
+        .and(query::query::<QueryParameter>())
+        .and_then(run);
 
     let power = prefix
+        .clone()
         .and(warp::post())
         .and(path!("power"))
         .and(path::end())
-        .and(body::json())
-        .and_then(power);
+        .and(body::json::<PowerParameter>())
+        .and_then(run);
 
     query.or(power).boxed()
 }
 
-async fn power(
+async fn run<T>(
     addr: SocketAddr,
     server_objs: Arc<RwLock<HashMap<SocketAddr, Arc<RwLock<ServerObj>>>>>,
-    param: PowerParameter,
-) -> Response<Box<dyn Reply>> {
-    let op = match SystemPowerAction::from_str(&param.op) {
-        Ok(o) => o,
-        Err(e) => {
-            return Ok(Box::new(reply::with_status(
-                reply::json(&Error {
-                    error: error::WebError::NoOp,
-                    message: e.to_string(),
-                }),
-                StatusCode::OK,
-            )))
-        }
-    };
-
-    let lock = server_objs.read().await;
-    let server_obj = match lock.get(&addr) {
-        Some(o) => o.clone(),
-        None => {
-            return Ok(Box::new(reply::with_status(
-                reply::json(&Error {
-                    message: addr.to_string(),
-                    error: error::WebError::ClientNotFound,
-                }),
-                StatusCode::OK,
-            )))
-        }
-    };
-
-    let (message, error) = match server_obj.read().await.system_power(op).await {
-        Ok(b) => match b {
-            true => ("".into(), error::WebError::Success),
-            false => ("".into(), error::WebError::UnknownError),
-        },
-        Err(e) => (e.to_string(), error::WebError::UnknownError),
-    };
-
-    return Ok(Box::new(reply::with_status(
-        reply::json(&Error { message, error }),
-        StatusCode::OK,
-    )));
+    param: T,
+) -> Response<Box<dyn Reply>>
+where
+    T: Parameter,
+{
+    param.run(addr, server_objs).await
 }
 
-async fn query(
-    addr: SocketAddr,
-    server_objs: Arc<RwLock<HashMap<SocketAddr, Arc<RwLock<ServerObj>>>>>,
-    param: QueryParameter,
-) -> Response<Box<dyn Reply>> {
-    let op = match QueryOperation::from_str(&param.op) {
-        Ok(o) => o,
-        Err(e) => {
-            return Ok(Box::new(reply::with_status(
-                reply::json(&Error {
-                    error: error::WebError::NoOp,
-                    message: e.to_string(),
-                }),
-                StatusCode::OK,
-            )))
-        }
-    };
-
-    let lock = server_objs.read().await;
-    let server_obj = match lock.get(&addr) {
-        Some(o) => o,
-        None => {
-            return Ok(Box::new(reply::with_status(
-                reply::json(&Error {
-                    message: addr.to_string(),
-                    error: error::WebError::ClientNotFound,
-                }),
-                StatusCode::OK,
-            )))
-        }
-    };
-
-    match op {
-        QueryOperation::Summary => summarize_client(server_obj).await,
-        QueryOperation::Apps => get_client_apps(server_obj).await,
-        QueryOperation::Processes => get_client_processes(server_obj).await,
-    }
-}
-
-async fn summarize_client(server_obj: &Arc<RwLock<ServerObj>>) -> Response<Box<dyn Reply>> {
+async fn summarize_client(server_obj: Arc<RwLock<ServerObj>>) -> Response<Box<dyn Reply>> {
     Ok(Box::new(reply::with_status(
         reply::json(&server_obj.read().await.summary()),
         StatusCode::OK,
     )))
 }
 
-async fn get_client_apps(server_obj: &Arc<RwLock<ServerObj>>) -> Response<Box<dyn Reply>> {
+async fn get_client_apps(server_obj: Arc<RwLock<ServerObj>>) -> Response<Box<dyn Reply>> {
     let apps = match server_obj.read().await.get_installed_apps().await {
         Ok(a) => a,
         Err(e) => {
@@ -172,7 +203,7 @@ async fn get_client_apps(server_obj: &Arc<RwLock<ServerObj>>) -> Response<Box<dy
     )))
 }
 
-async fn get_client_processes(server_obj: &Arc<RwLock<ServerObj>>) -> Response<Box<dyn Reply>> {
+async fn get_client_processes(server_obj: Arc<RwLock<ServerObj>>) -> Response<Box<dyn Reply>> {
     let processes = match server_obj.read().await.get_processes().await {
         Ok(p) => p,
         Err(e) => {
@@ -188,6 +219,26 @@ async fn get_client_processes(server_obj: &Arc<RwLock<ServerObj>>) -> Response<B
 
     Ok(Box::new(reply::with_status(
         reply::json(&processes),
+        StatusCode::OK,
+    )))
+}
+
+async fn get_client_displays(server_obj: Arc<RwLock<ServerObj>>) -> Response<Box<dyn Reply>> {
+    let displays = match server_obj.read().await.get_displays().await {
+        Ok(p) => p,
+        Err(e) => {
+            return Ok(Box::new(reply::with_status(
+                reply::json(&Error {
+                    message: e.to_string(),
+                    error: error::WebError::UnknownError,
+                }),
+                StatusCode::OK,
+            )))
+        }
+    };
+
+    Ok(Box::new(reply::with_status(
+        reply::json(&displays),
         StatusCode::OK,
     )))
 }

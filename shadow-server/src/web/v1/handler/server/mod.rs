@@ -1,5 +1,6 @@
 use super::super::error::{self, Error};
 use crate::network::ServerObj;
+use anyhow::Result as AppResult;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, net::SocketAddr, str::FromStr, sync::Arc};
 use strum_macros::EnumString;
@@ -26,6 +27,56 @@ struct QueryParameter {
     op: String,
 }
 
+impl Parameter for QueryParameter {
+    type Operation = QueryOperation;
+
+    fn operation(&self) -> AppResult<Self::Operation> {
+        Ok(Self::Operation::from_str(&self.op)?)
+    }
+
+    async fn dispatch(
+        &self,
+        op: Self::Operation,
+        server_objs: Arc<RwLock<HashMap<SocketAddr, Arc<RwLock<ServerObj>>>>>,
+    ) -> Response<Box<dyn Reply>> {
+        match op {
+            QueryOperation::Clients => query_clients(server_objs).await,
+        }
+    }
+}
+
+trait Parameter {
+    type Operation;
+
+    fn operation(&self) -> AppResult<Self::Operation>;
+
+    async fn dispatch(
+        &self,
+        op: Self::Operation,
+        server_objs: Arc<RwLock<HashMap<SocketAddr, Arc<RwLock<ServerObj>>>>>,
+    ) -> Response<Box<dyn Reply>>;
+
+    async fn run(
+        &self,
+        server_objs: Arc<RwLock<HashMap<SocketAddr, Arc<RwLock<ServerObj>>>>>,
+    ) -> Response<Box<dyn Reply>> {
+        let op = match self.operation() {
+            Ok(o) => o,
+            Err(e) => {
+                return Ok(Box::new(reply::with_status(
+                    reply::json(&Error {
+                        error: error::WebError::NoOp,
+                        message: e.to_string(),
+                    }),
+                    StatusCode::OK,
+                )))
+            }
+        };
+
+        self.dispatch(op, server_objs).await
+    }
+}
+
 pub fn setup_routes(
     server_objs: Arc<RwLock<HashMap<SocketAddr, Arc<RwLock<ServerObj>>>>>,
 ) -> BoxedFilter<(impl Reply,)> {
@@ -34,53 +85,34 @@ pub fn setup_routes(
     let query = prefix
         .and(path!("query"))
         .and(path::end())
-        .and(query::query())
-        .and_then(query);
+        .and(query::query::<QueryParameter>())
+        .and_then(run);
 
     query.boxed()
 }
 
-async fn query(
+async fn run<T>(
     server_objs: Arc<RwLock<HashMap<SocketAddr, Arc<RwLock<ServerObj>>>>>,
-    param: QueryParameter,
-) -> Response<Box<dyn Reply>> {
-    let op = match QueryOperation::from_str(&param.op) {
-        Ok(o) => o,
-        Err(e) => {
-            return Ok(Box::new(reply::with_status(
-                reply::json(&Error {
-                    error: error::WebError::NoOp,
-                    message: e.to_string(),
-                }),
-                StatusCode::OK,
-            )))
-        }
-    };
-
-    match op {
-        QueryOperation::Clients => query_clients(server_objs).await,
-    }
+    param: T,
+) -> Response<Box<dyn Reply>>
+where
+    T: Parameter,
+{
+    param.run(server_objs).await
 }
 
 async fn query_clients(
     server_objs: Arc<RwLock<HashMap<SocketAddr, Arc<RwLock<ServerObj>>>>>,
 ) -> Response<Box<dyn Reply>> {
-    #[derive(Serialize, Deserialize)]
-    struct Query {
-        count: usize,
-        peers: Vec<String>,
-    }
-
     let server_objs = server_objs.read().await;
 
     Ok(Box::new(reply::with_status(
-        reply::json(&Query {
-            count: server_objs.len(),
-            peers: server_objs
+        reply::json(
+            &server_objs
                 .keys()
                 .map(|addr: &SocketAddr| addr.to_string())
-                .collect(),
-        }),
+                .collect::<Vec<_>>(),
+        ),
         StatusCode::OK,
     )))
 }

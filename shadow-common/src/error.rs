@@ -1,3 +1,4 @@
+use crabgrab::capturable_content::CapturableContentError;
 use remoc::rtc::CallError;
 use thiserror::Error;
 
@@ -17,10 +18,22 @@ pub enum ShadowError {
 
     #[error("can not list directory: {0}, message: {1}")]
     QueryFilesError(String, String),
+
+    #[error("operation not permitted")]
+    AccessDenied,
+
+    #[error("can not get capturable content")]
+    GetCapturableContentError(String),
 }
 
 impl From<CallError> for ShadowError {
     fn from(err: CallError) -> Self {
         Self::CallError(err)
+    }
+}
+
+impl From<CapturableContentError> for ShadowError {
+    fn from(err: CapturableContentError) -> Self {
+        Self::GetCapturableContentError(err.to_string())
     }
 }

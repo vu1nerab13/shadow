@@ -1,4 +1,9 @@
 use crate::misc;
+use crabgrab::{
+    capturable_content::{CapturableContent, CapturableContentFilter},
+    capture_stream::{CaptureConfig, CaptureStream},
+    feature::screenshot,
+};
 use remoc::{codec, prelude::*};
 use shadow_common::{
     client::{self as sc, SystemPowerAction},
@@ -149,5 +154,21 @@ impl sc::Client for ClientObj {
         }
 
         Ok(ret)
+    }
+
+    async fn get_displays(&self) -> Result<Vec<sc::Display>, ShadowError> {
+        // let token = match CaptureStream::test_access(false) {
+        //     Some(t) => t,
+        //     None => match CaptureStream::request_access(false).await {
+        //         Some(t) => t,
+        //         None => return Err(ShadowError::AccessDenied),
+        //     },
+        // };
+
+        let content = CapturableContent::new(CapturableContentFilter::EVERYTHING).await?;
+        Ok(content
+            .displays()
+            .map(|d| sc::Display { rect: d.rect() })
+            .collect())
     }
 }
