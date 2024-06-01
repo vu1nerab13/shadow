@@ -20,4 +20,5 @@ sysinfo = "0.30.11"
 uuid = "1.8.0"
 system_shutdown = "4.0.1"
 installed = { git = "https://github.com/MMitsuha/installed-rs.git", version = "0.2" }
-crabgrab = { version = "0.3.6", features = ["wgpu", "screenshot", "metal", "dxgi"] }
+crabgrab = { version = "0.3.7", features = ["wgpu", "screenshot", "metal", "dxgi"] }
+wgpu = "0.20.0"

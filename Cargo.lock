@@ -524,9 +524,9 @@ dependencies = [
 
 [[package]]
 name = "crabgrab"
-version = "0.3.6"
+version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d4ad6f3937caa23e2b4e62f066f814cd72f7e3bb6d729666bc3263da715af1cc"
+checksum = "f920510c42372ff30292c931adc2f7fd1c4dadcaea29fede24d984a566412476"
 dependencies = [
  "block2",
  "bytemuck",
@@ -2199,6 +2199,7 @@ dependencies = [
  "system_shutdown",
  "tokio",
  "uuid",
+ "wgpu",
 ]
 
 [[package]]
