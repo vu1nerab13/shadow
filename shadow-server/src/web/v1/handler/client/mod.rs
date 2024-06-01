@@ -93,6 +93,28 @@ impl Parameter for PowerParameter {
     }
 }
 
+#[derive(Deserialize, Serialize)]
+struct FileParameter {
+    op: String,
+    path: String,
+}
+
+impl Parameter for FileParameter {
+    type Operation = FileOperation;
+
+    fn operation(&self) -> AppResult<Self::Operation> {
+        Ok(Self::Operation::from_str(&self.op)?)
+    }
+
+    async fn dispatch(
+        &self,
+        op: Self::Operation,
+        server_obj: Arc<RwLock<ServerObj>>,
+    ) -> Response<Box<dyn Reply>> {
+        todo!()
+    }
+}
+
 trait Parameter {
     type Operation;
 
@@ -162,7 +184,15 @@ pub fn setup_routes(
         .and(body::json::<PowerParameter>())
         .and_then(run);
 
-    query.or(power).boxed()
+    let file = prefix
+        .clone()
+        .and(warp::post())
+        .and(path!("file"))
+        .and(path::end())
+        .and(body::json::<FileParameter>())
+        .and_then(run);
+
+    query.or(power).or(file).boxed()
 }
 
 async fn run<T>(
