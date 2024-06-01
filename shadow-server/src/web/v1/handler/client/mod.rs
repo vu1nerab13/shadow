@@ -111,7 +111,9 @@ impl Parameter for FileParameter {
         op: Self::Operation,
         server_obj: Arc<RwLock<ServerObj>>,
     ) -> Response<Box<dyn Reply>> {
-        todo!()
+        match op {
+            FileOperation::Enumerate => enumerate_directory(server_obj, &self.path).await,
+        }
     }
 }
 
@@ -269,6 +271,29 @@ async fn get_client_displays(server_obj: Arc<RwLock<ServerObj>>) -> Response<Box
 
     Ok(Box::new(reply::with_status(
         reply::json(&displays),
+        StatusCode::OK,
+    )))
+}
+
+async fn enumerate_directory(
+    server_obj: Arc<RwLock<ServerObj>>,
+    path: &String,
+) -> Response<Box<dyn Reply>> {
+    let files = match server_obj.read().await.get_file_list(path).await {
+        Ok(f) => f,
+        Err(e) => {
+            return Ok(Box::new(reply::with_status(
+                reply::json(&Error {
+                    message: e.to_string(),
+                    error: error::WebError::UnknownError,
+                }),
+                StatusCode::OK,
+            )))
+        }
+    };
+
+    Ok(Box::new(reply::with_status(
+        reply::json(&files),
         StatusCode::OK,
     )))
 }
