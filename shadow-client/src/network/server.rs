@@ -12,7 +12,7 @@ use shadow_common::{
 };
 use std::{os::unix::fs::MetadataExt, path::Path, sync::Arc};
 use sysinfo::System;
-use tokio::{fs, sync::RwLock};
+use tokio::{fs, io::AsyncReadExt, sync::RwLock};
 
 #[allow(dead_code)]
 #[derive(Debug)]
@@ -197,11 +197,11 @@ impl sc::Client for ClientObj {
         };
 
         let config = CaptureConfig::with_display(display, format.0);
-        let bitmap = match screenshot::take_screenshot(token, config).await {
-            Ok(f) => match f.get_bitmap() {
-                Ok(b) => b,
-                Err(e) => return Err(ShadowError::GetCapturableContentError(e.to_string())),
-            },
+        let bitmap = match screenshot::take_screenshot(token, config)
+            .await?
+            .get_bitmap()
+        {
+            Ok(b) => b,
             Err(e) => return Err(ShadowError::GetCapturableContentError(e.to_string())),
         };
 
@@ -227,5 +227,15 @@ impl sc::Client for ClientObj {
                 return Err(ShadowError::Unsupported);
             }
         })
+    }
+
+    async fn get_file_content(&self, file_path: String) -> Result<Vec<u8>, ShadowError> {
+        let mut buf = Vec::new();
+        fs::File::open(file_path)
+            .await?
+            .read_to_end(&mut buf)
+            .await?;
+
+        Ok(buf)
     }
 }

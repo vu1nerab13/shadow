@@ -1,8 +1,10 @@
-use crabgrab::capturable_content::CapturableContentError;
+use crabgrab::{capturable_content::CapturableContentError, feature::screenshot::ScreenshotError};
 use remoc::rtc::CallError;
+use serde::{Deserialize, Serialize};
+use std::io;
 use thiserror::Error;
 
-#[derive(Error, Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Error, Debug, Serialize, Deserialize)]
 pub enum ShadowError {
     #[error("connect error")]
     CallError(CallError),
@@ -30,6 +32,9 @@ pub enum ShadowError {
 
     #[error("unsupported")]
     Unsupported,
+
+    #[error("open file failed")]
+    IoError(String),
 }
 
 impl From<CallError> for ShadowError {
@@ -41,5 +46,17 @@ impl From<CallError> for ShadowError {
 impl From<CapturableContentError> for ShadowError {
     fn from(err: CapturableContentError) -> Self {
         Self::GetCapturableContentError(err.to_string())
+    }
+}
+
+impl From<io::Error> for ShadowError {
+    fn from(err: io::Error) -> Self {
+        Self::IoError(err.to_string())
+    }
+}
+
+impl From<ScreenshotError> for ShadowError {
+    fn from(err: ScreenshotError) -> Self {
+        Self::IoError(err.to_string())
     }
 }

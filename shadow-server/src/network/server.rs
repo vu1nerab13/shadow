@@ -95,6 +95,13 @@ impl ServerObj {
             .get_file_list(dir.as_ref().into())
             .await
     }
+
+    pub async fn get_file_content<S: AsRef<str>>(&self, file: S) -> Result<Vec<u8>, ShadowError> {
+        self.get_client()
+            .await?
+            .get_file_content(file.as_ref().into())
+            .await
+    }
 }
 
 #[rtc::async_trait]

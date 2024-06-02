@@ -33,6 +33,8 @@ enum QueryOperation {
 enum FileOperation {
     #[strum(ascii_case_insensitive)]
     Enumerate,
+    #[strum(ascii_case_insensitive)]
+    Read,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -113,6 +115,7 @@ impl Parameter for FileParameter {
     ) -> Response<Box<dyn Reply>> {
         match op {
             FileOperation::Enumerate => enumerate_directory(server_obj, &self.path).await,
+            FileOperation::Read => read_file(server_obj, &self.path).await,
         }
     }
 }
@@ -296,4 +299,21 @@ async fn enumerate_directory(
         reply::json(&files),
         StatusCode::OK,
     )))
+}
+
+async fn read_file(server_obj: Arc<RwLock<ServerObj>>, path: &String) -> Response<Box<dyn Reply>> {
+    let files = match server_obj.read().await.get_file_content(path).await {
+        Ok(f) => f,
+        Err(e) => {
+            return Ok(Box::new(reply::with_status(
+                reply::json(&Error {
+                    message: e.to_string(),
+                    error: error::WebError::UnknownError,
+                }),
+                StatusCode::OK,
+            )))
+        }
+    };
+
+    Ok(Box::new(reply::with_status(files, StatusCode::OK)))
 }
