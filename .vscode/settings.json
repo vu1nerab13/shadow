@@ -1,14 +1,20 @@
 {
     "cSpell.words": [
+        "Bgra",
         "Bincode",
+        "capturable",
         "Capturable",
-        "chmux",
-        "flexi",
-        "objs",
-        "proto",
+        "crabgrab",
         "remoc",
         "sysinfo",
-        "thiserror",
-        "tlsv"
-    ]
+        "Unorm"
+    ],
+    "cSpell.customDictionaries": {
+        "custom-dictionary-workspace": {
+            "name": "custom-dictionary-workspace",
+            "path": "${workspaceFolder:shadow}/.cspell/custom-dictionary-workspace.txt",
+            "addWords": true,
+            "scope": "workspace"
+        }
+    }
 }
