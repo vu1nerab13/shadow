@@ -17,4 +17,5 @@ thiserror = "1.0.59"
 installed = { git = "https://github.com/MMitsuha/installed-rs.git", version = "0.2" }
 strum = "0.26.2"
 strum_macros = "0.26"
-crabgrab = { version = "0.3.7" }
+crabgrab = { version = "0.3.7", features = ["wgpu", "screenshot", "metal", "dxgi"] }
+wgpu = "0.20.0"

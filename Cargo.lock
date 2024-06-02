@@ -2215,6 +2215,7 @@ dependencies = [
  "sysinfo",
  "thiserror",
  "uuid",
+ "wgpu",
 ]
 
 [[package]]
