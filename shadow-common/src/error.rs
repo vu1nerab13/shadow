@@ -24,6 +24,12 @@ pub enum ShadowError {
 
     #[error("can not get capturable content")]
     GetCapturableContentError(String),
+
+    #[error("no such display")]
+    NoSuchDisplay,
+
+    #[error("unsupported")]
+    Unsupported,
 }
 
 impl From<CallError> for ShadowError {

@@ -2,15 +2,15 @@ use crate::misc;
 use crabgrab::{
     capturable_content::{CapturableContent, CapturableContentFilter},
     capture_stream::{CaptureConfig, CaptureStream},
-    feature::screenshot,
+    feature::{bitmap::VideoFrameBitmap, screenshot},
 };
 use remoc::{codec, prelude::*};
 use shadow_common::{
-    client::{self as sc, SystemPowerAction},
+    client::{self as sc, PixelFormat, SystemPowerAction},
     error::ShadowError,
     server as ss,
 };
-use std::{path::Path, sync::Arc};
+use std::{os::unix::fs::MetadataExt, path::Path, sync::Arc};
 use sysinfo::System;
 use tokio::{fs, sync::RwLock};
 
@@ -146,10 +146,16 @@ impl sc::Client for ClientObj {
                 Ok(t) => t,
                 Err(_) => continue,
             };
+            let metadata = match f.metadata().await {
+                Ok(m) => m,
+                Err(_) => continue,
+            };
+            let size = metadata.size();
 
             ret.push(sc::File {
                 name,
                 is_dir: file_type.is_dir(),
+                size,
             });
         }
 
@@ -157,18 +163,69 @@ impl sc::Client for ClientObj {
     }
 
     async fn get_displays(&self) -> Result<Vec<sc::Display>, ShadowError> {
-        // let token = match CaptureStream::test_access(false) {
-        //     Some(t) => t,
-        //     None => match CaptureStream::request_access(false).await {
-        //         Some(t) => t,
-        //         None => return Err(ShadowError::AccessDenied),
-        //     },
-        // };
-
         let content = CapturableContent::new(CapturableContentFilter::EVERYTHING).await?;
         Ok(content
             .displays()
             .map(|d| sc::Display { rect: d.rect() })
             .collect())
+    }
+
+    async fn get_pixel_formats(&self) -> Result<Vec<sc::PixelFormat>, ShadowError> {
+        Ok(CaptureStream::supported_pixel_formats()
+            .into_iter()
+            .map(|p| PixelFormat { 0: *p })
+            .collect())
+    }
+
+    async fn get_screenshot(
+        &self,
+        n_display: usize,
+        format: sc::PixelFormat,
+    ) -> Result<sc::Frame, ShadowError> {
+        let token = match CaptureStream::test_access(false) {
+            Some(t) => t,
+            None => match CaptureStream::request_access(false).await {
+                Some(t) => t,
+                None => return Err(ShadowError::AccessDenied),
+            },
+        };
+
+        let content = CapturableContent::new(CapturableContentFilter::EVERYTHING).await?;
+        let display = match content.displays().nth(n_display) {
+            Some(d) => d,
+            None => return Err(ShadowError::NoSuchDisplay),
+        };
+
+        let config = CaptureConfig::with_display(display, format.0);
+        let bitmap = match screenshot::take_screenshot(token, config).await {
+            Ok(f) => match f.get_bitmap() {
+                Ok(b) => b,
+                Err(e) => return Err(ShadowError::GetCapturableContentError(e.to_string())),
+            },
+            Err(e) => return Err(ShadowError::GetCapturableContentError(e.to_string())),
+        };
+
+        Ok(match bitmap {
+            crabgrab::feature::bitmap::FrameBitmap::BgraUnorm8x4(f) => sc::Frame {
+                frame_type: sc::FrameType::BgraUnorm8x4(f.data.to_vec()),
+                height: f.height,
+                width: f.width,
+            },
+            crabgrab::feature::bitmap::FrameBitmap::RgbaUnormPacked1010102(f) => sc::Frame {
+                frame_type: sc::FrameType::RgbaUnormPacked1010102(f.data.to_vec()),
+                height: f.height,
+                width: f.width,
+            },
+            crabgrab::feature::bitmap::FrameBitmap::RgbaF16x4(_) => {
+                // TODO: Fix this
+
+                return Err(ShadowError::Unsupported);
+            }
+            crabgrab::feature::bitmap::FrameBitmap::YCbCr(_) => {
+                // TODO: Fix this
+
+                return Err(ShadowError::Unsupported);
+            }
+        })
     }
 }
