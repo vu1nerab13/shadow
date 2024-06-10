@@ -1,2 +1,6 @@
 # Custom Dictionary Words
+chmux
+ocsp
+pemfile
+rustls
 thiserror

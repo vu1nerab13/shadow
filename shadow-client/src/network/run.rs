@@ -104,7 +104,7 @@ async fn handle_connection(client: Arc<RwLock<ss::ServerClient<codec::Bincode>>>
 async fn add_to_ca() -> AppResult<RootCertStore> {
     let mut root_cert_store = rustls::RootCertStore::empty();
     let mut content = Vec::new();
-    File::open("/Users/mitsuha/shadow/certs/shadow_ca.crt")
+    File::open("certs/shadow_ca.crt")
         .await?
         .read_to_end(&mut content)
         .await?;
