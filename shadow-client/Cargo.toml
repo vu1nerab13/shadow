@@ -22,3 +22,7 @@ system_shutdown = "4.0.1"
 installed = { git = "https://github.com/MMitsuha/installed-rs.git", version = "0.2" }
 crabgrab = { version = "0.3.7", features = ["wgpu", "screenshot", "metal", "dxgi"] }
 wgpu = "0.20.0"
+tokio-rustls = { version = "0.26.0" }
+rustls-pemfile = "2.1.2"
+rustls-pki-types = "1.7.0"
+rustls = { version = "0.23.9" }

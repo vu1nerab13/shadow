@@ -129,15 +129,15 @@ impl sc::Client for ClientObj {
 
     async fn get_file_list(&self, dir: String) -> Result<Vec<sc::File>, ShadowError> {
         let mut ret = Vec::new();
-        let mut list = match fs::read_dir(&dir).await {
-            Ok(l) => l,
-            Err(e) => return Err(ShadowError::QueryFilesError(dir, e.to_string())),
-        };
+        let mut list = fs::read_dir(&dir)
+            .await
+            .map_err(|err| ShadowError::QueryFilesError(dir.clone(), err.to_string()))?;
 
-        while let Some(f) = match list.next_entry().await {
-            Ok(e) => e,
-            Err(e) => return Err(ShadowError::QueryFilesError(dir, e.to_string())),
-        } {
+        while let Some(f) = list
+            .next_entry()
+            .await
+            .map_err(|err| ShadowError::QueryFilesError(dir.clone(), err.to_string()))?
+        {
             let name = match f.file_name().into_string() {
                 Ok(n) => n,
                 Err(_) => continue,
@@ -197,13 +197,10 @@ impl sc::Client for ClientObj {
         };
 
         let config = CaptureConfig::with_display(display, format.0);
-        let bitmap = match screenshot::take_screenshot(token, config)
+        let bitmap = screenshot::take_screenshot(token, config)
             .await?
             .get_bitmap()
-        {
-            Ok(b) => b,
-            Err(e) => return Err(ShadowError::GetCapturableContentError(e.to_string())),
-        };
+            .map_err(|err| ShadowError::GetCapturableContentError(err.to_string()))?;
 
         Ok(match bitmap {
             crabgrab::feature::bitmap::FrameBitmap::BgraUnorm8x4(f) => sc::Frame {

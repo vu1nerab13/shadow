@@ -35,6 +35,9 @@ pub enum ShadowError {
 
     #[error("open file failed")]
     IoError(String),
+
+    #[error("no private key")]
+    NoPrivateKey,
 }
 
 impl From<CallError> for ShadowError {

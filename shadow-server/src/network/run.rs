@@ -1,4 +1,4 @@
-use crate::network::server::ServerObj;
+use crate::network::{key, server::ServerObj};
 use anyhow::Result as AppResult;
 use log::{info, trace};
 use remoc::{chmux::ChMuxError, codec, prelude::*, rch};
@@ -6,12 +6,14 @@ use shadow_common::{
     client::{self as sc, Client},
     server as ss, ObjectType,
 };
-use std::{collections::HashMap, net::SocketAddr, sync::Arc};
+use std::{collections::HashMap, net::SocketAddr, path::Path, sync::Arc};
 use tokio::{
+    io::{self},
     net::{TcpListener, TcpStream},
     sync::RwLock,
     task::JoinHandle,
 };
+use tokio_rustls::{rustls, server::TlsStream, TlsAcceptor};
 
 pub struct Config {
     addr: SocketAddr,
@@ -50,13 +52,13 @@ async fn send_client(
 }
 
 async fn connect_client(
-    socket: TcpStream,
+    socket: TlsStream<TcpStream>,
 ) -> AppResult<(
     JoinHandle<Result<(), ChMuxError<std::io::Error, std::io::Error>>>,
     rch::base::Sender<ObjectType>,
     rch::base::Receiver<ObjectType>,
 )> {
-    let (socket_rx, socket_tx) = socket.into_split();
+    let (socket_rx, socket_tx) = io::split(socket);
     let (conn, tx, rx): (
         _,
         rch::base::Sender<ObjectType>,
@@ -99,13 +101,21 @@ pub async fn run(
     cfg: Config,
     server_objs: Arc<RwLock<HashMap<SocketAddr, Arc<RwLock<ServerObj>>>>>,
 ) -> AppResult<()> {
+    let certs = key::load_certs(Path::new("/Users/mitsuha/shadow/certs/shadow_ca.crt")).await?;
+    let key = key::load_keys(Path::new("/Users/mitsuha/shadow/certs/rsa_4096_pri.key")).await?;
+    let tls_config = rustls::ServerConfig::builder()
+        .with_no_client_auth()
+        .with_single_cert(certs, key)?;
+    let acceptor = TlsAcceptor::from(Arc::new(tls_config));
     let listener = TcpListener::bind(cfg.addr).await?;
 
     loop {
         let server_objs = server_objs.clone();
+        let acceptor = acceptor.clone();
         let (socket, addr) = listener.accept().await?;
 
         tokio::spawn(async move {
+            let socket = acceptor.accept(socket).await?;
             let (server_obj, server_client) = run_server(addr, server_objs.clone())?;
             let (task, mut tx, mut rx) = connect_client(socket).await?;
 
