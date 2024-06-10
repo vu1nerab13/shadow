@@ -24,7 +24,7 @@ pub async fn run(
 
     let v1_api = v1::setup_routes(server_objs.clone());
 
-    warp::serve(root.or(v1_api).with(warp::cors().allow_any_origin()))
+    warp::serve(root.or(v1_api).with(warp::cors().allow_any_origin().allow_methods(vec!["GET", "POST", "DELETE"]).allow_headers(vec!["Access-Control-Allow-Origin", "Origin", "Accept", "X-Requested-With", "Content-Type"])))
         .run(cfg.addr)
         .await;
 
