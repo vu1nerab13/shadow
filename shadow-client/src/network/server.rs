@@ -10,7 +10,7 @@ use shadow_common::{
     error::ShadowError,
     server as ss,
 };
-use std::{os::unix::fs::MetadataExt, path::Path, sync::Arc};
+use std::{path::Path, sync::Arc};
 use sysinfo::System;
 use tokio::{fs, io::AsyncReadExt, sync::RwLock};
 
@@ -150,7 +150,7 @@ impl sc::Client for ClientObj {
                 Ok(m) => m,
                 Err(_) => continue,
             };
-            let size = metadata.size();
+            let size = metadata.len();
 
             ret.push(sc::File {
                 name,
