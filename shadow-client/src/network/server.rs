@@ -247,8 +247,6 @@ impl sc::Client for ClientObj {
     }
 
     async fn write_file(&self, file_path: String, content: Vec<u8>) -> Result<(), ShadowError> {
-        log::debug!("{:?} is being written to {}", content, file_path);
-
         let mut file = fs::OpenOptions::new().write(true).open(file_path).await?;
         file.write_all(&content).await?;
         file.flush().await?;

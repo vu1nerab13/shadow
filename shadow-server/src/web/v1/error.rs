@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use shadow_common::error::ShadowError;
 use thiserror::Error;
 
 #[derive(Serialize, Deserialize, Error, Debug)]
@@ -20,6 +21,9 @@ pub enum WebError {
 
     #[error("param is invalid")]
     ParamInvalid,
+
+    #[error("client encountered an error: {0}")]
+    ClientError(ShadowError),
 }
 
 #[derive(Serialize, Deserialize, Debug)]
