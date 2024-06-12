@@ -23,7 +23,7 @@ pub enum WebError {
     ParamInvalid,
 
     #[error("client encountered an error: {0}")]
-    ClientError(ShadowError),
+    ClientError(String),
 }
 
 #[derive(Serialize, Deserialize, Debug)]

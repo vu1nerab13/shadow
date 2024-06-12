@@ -71,7 +71,7 @@ trait Parameter {
             Err(e) => Ok(Box::new(reply::with_status(
                 reply::json(&Error {
                     message: format!("error when performing {}", Self::summarize()),
-                    error: error::WebError::ClientError(e),
+                    error: error::WebError::ClientError(e.to_string()),
                 }),
                 StatusCode::BAD_REQUEST,
             ))),
