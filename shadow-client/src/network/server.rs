@@ -12,7 +12,11 @@ use shadow_common::{
 };
 use std::{path::Path, sync::Arc};
 use sysinfo::System;
-use tokio::{fs, io::AsyncReadExt, sync::RwLock};
+use tokio::{
+    fs,
+    io::{AsyncReadExt, AsyncWriteExt},
+    sync::RwLock,
+};
 
 #[allow(dead_code)]
 #[derive(Debug)]
@@ -238,6 +242,16 @@ impl sc::Client for ClientObj {
 
     async fn create_file(&self, file_path: String) -> Result<(), ShadowError> {
         fs::File::create(file_path).await?;
+
+        Ok(())
+    }
+
+    async fn write_file(&self, file_path: String, content: Vec<u8>) -> Result<(), ShadowError> {
+        log::debug!("{:?} is being written to {}", content, file_path);
+
+        let mut file = fs::OpenOptions::new().write(true).open(file_path).await?;
+        file.write_all(&content).await?;
+        file.flush().await?;
 
         Ok(())
     }

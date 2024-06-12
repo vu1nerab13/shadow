@@ -33,7 +33,7 @@ pub enum ShadowError {
     #[error("unsupported")]
     Unsupported,
 
-    #[error("open file failed")]
+    #[error("io error: {0}")]
     IoError(String),
 
     #[error("no private key")]

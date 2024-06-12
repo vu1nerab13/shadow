@@ -2469,6 +2469,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_bytes"
+version = "0.11.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8b8497c313fd43ab992087548117643f6fcd935cbf36f176ffda0aacf9591734"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "serde_derive"
 version = "1.0.203"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2575,6 +2584,7 @@ dependencies = [
  "rustls-pemfile",
  "rustls-pki-types",
  "serde",
+ "serde_bytes",
  "serde_json",
  "shadow-common",
  "strum",

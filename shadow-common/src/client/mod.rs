@@ -23,6 +23,8 @@ pub trait Client {
 
     async fn create_file(&self, file_path: String) -> Result<(), ShadowError>;
 
+    async fn write_file(&self, file_path: String, content: Vec<u8>) -> Result<(), ShadowError>;
+
     async fn get_displays(&self) -> Result<Vec<Display>, ShadowError>;
 
     async fn get_pixel_formats(&self) -> Result<Vec<PixelFormat>, ShadowError>;

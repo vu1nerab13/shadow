@@ -37,6 +37,8 @@ enum FileOperation {
     Read,
     #[strum(ascii_case_insensitive)]
     Create,
+    #[strum(ascii_case_insensitive)]
+    Write,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -82,17 +84,25 @@ impl Parameter for PowerParameter {
         op: Self::Operation,
         server_obj: Arc<RwLock<ServerObj>>,
     ) -> Response<Box<dyn Reply>> {
-        let (message, error) = match server_obj.read().await.system_power(op).await {
+        let (message, error, code) = match server_obj.read().await.system_power(op).await {
             Ok(b) => match b {
-                true => ("".into(), error::WebError::Success),
-                false => ("".into(), error::WebError::UnknownError),
+                true => ("".into(), error::WebError::Success, StatusCode::OK),
+                false => (
+                    "".into(),
+                    error::WebError::UnknownError,
+                    StatusCode::BAD_REQUEST,
+                ),
             },
-            Err(e) => (e.to_string(), error::WebError::UnknownError),
+            Err(e) => (
+                e.to_string(),
+                error::WebError::UnknownError,
+                StatusCode::BAD_REQUEST,
+            ),
         };
 
         return Ok(Box::new(reply::with_status(
             reply::json(&Error { message, error }),
-            StatusCode::OK,
+            code,
         )));
     }
 }
@@ -101,6 +111,8 @@ impl Parameter for PowerParameter {
 struct FileParameter {
     op: String,
     path: String,
+    #[serde(with = "serde_bytes", default)]
+    content: Option<Vec<u8>>,
 }
 
 impl Parameter for FileParameter {
@@ -119,6 +131,7 @@ impl Parameter for FileParameter {
             FileOperation::Enumerate => enumerate_directory(server_obj, &self.path).await,
             FileOperation::Read => read_file(server_obj, &self.path).await,
             FileOperation::Create => create_file(server_obj, &self.path).await,
+            FileOperation::Write => write_file(server_obj, &self.path, &self.content).await,
         }
     }
 }
@@ -147,7 +160,7 @@ trait Parameter {
                         error: error::WebError::NoOp,
                         message: e.to_string(),
                     }),
-                    StatusCode::OK,
+                    StatusCode::BAD_REQUEST,
                 )))
             }
         };
@@ -161,7 +174,7 @@ trait Parameter {
                         message: addr.to_string(),
                         error: error::WebError::ClientNotFound,
                     }),
-                    StatusCode::OK,
+                    StatusCode::BAD_REQUEST,
                 )))
             }
         };
@@ -230,7 +243,7 @@ async fn get_client_apps(server_obj: Arc<RwLock<ServerObj>>) -> Response<Box<dyn
                     message: e.to_string(),
                     error: error::WebError::UnknownError,
                 }),
-                StatusCode::OK,
+                StatusCode::BAD_REQUEST,
             )))
         }
     };
@@ -250,7 +263,7 @@ async fn get_client_processes(server_obj: Arc<RwLock<ServerObj>>) -> Response<Bo
                     message: e.to_string(),
                     error: error::WebError::UnknownError,
                 }),
-                StatusCode::OK,
+                StatusCode::BAD_REQUEST,
             )))
         }
     };
@@ -270,7 +283,7 @@ async fn get_client_displays(server_obj: Arc<RwLock<ServerObj>>) -> Response<Box
                     message: e.to_string(),
                     error: error::WebError::UnknownError,
                 }),
-                StatusCode::OK,
+                StatusCode::BAD_REQUEST,
             )))
         }
     };
@@ -293,7 +306,7 @@ async fn enumerate_directory(
                     message: e.to_string(),
                     error: error::WebError::UnknownError,
                 }),
-                StatusCode::OK,
+                StatusCode::BAD_REQUEST,
             )))
         }
     };
@@ -313,7 +326,7 @@ async fn read_file(server_obj: Arc<RwLock<ServerObj>>, path: &String) -> Respons
                     message: e.to_string(),
                     error: error::WebError::UnknownError,
                 }),
-                StatusCode::OK,
+                StatusCode::BAD_REQUEST,
             )))
         }
     };
@@ -333,7 +346,52 @@ async fn create_file(
                     message: e.to_string(),
                     error: error::WebError::UnknownError,
                 }),
-                StatusCode::OK,
+                StatusCode::BAD_REQUEST,
+            )))
+        }
+    };
+
+    Ok(Box::new(reply::with_status(
+        reply::json(&Error {
+            message: "".into(),
+            error: error::WebError::Success,
+        }),
+        StatusCode::OK,
+    )))
+}
+
+async fn write_file(
+    server_obj: Arc<RwLock<ServerObj>>,
+    path: &String,
+    content: &Option<Vec<u8>>,
+) -> Response<Box<dyn Reply>> {
+    let content = match content {
+        Some(c) => c,
+        None => {
+            return Ok(Box::new(reply::with_status(
+                reply::json(&Error {
+                    message: "content not provided".into(),
+                    error: error::WebError::ParamInvalid,
+                }),
+                StatusCode::BAD_REQUEST,
+            )))
+        }
+    };
+
+    match server_obj
+        .read()
+        .await
+        .write_file(path, content.clone())
+        .await
+    {
+        Ok(f) => f,
+        Err(e) => {
+            return Ok(Box::new(reply::with_status(
+                reply::json(&Error {
+                    message: e.to_string(),
+                    error: error::WebError::UnknownError,
+                }),
+                StatusCode::BAD_REQUEST,
             )))
         }
     };

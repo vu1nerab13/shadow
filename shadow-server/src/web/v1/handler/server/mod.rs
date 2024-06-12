@@ -68,7 +68,7 @@ trait Parameter {
                         error: error::WebError::NoOp,
                         message: e.to_string(),
                     }),
-                    StatusCode::OK,
+                    StatusCode::BAD_REQUEST,
                 )))
             }
         };
