@@ -35,6 +35,8 @@ enum FileOperation {
     Enumerate,
     #[strum(ascii_case_insensitive)]
     Read,
+    #[strum(ascii_case_insensitive)]
+    Create,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -116,6 +118,7 @@ impl Parameter for FileParameter {
         match op {
             FileOperation::Enumerate => enumerate_directory(server_obj, &self.path).await,
             FileOperation::Read => read_file(server_obj, &self.path).await,
+            FileOperation::Create => create_file(server_obj, &self.path).await,
         }
     }
 }
@@ -316,4 +319,30 @@ async fn read_file(server_obj: Arc<RwLock<ServerObj>>, path: &String) -> Respons
     };
 
     Ok(Box::new(reply::with_status(files, StatusCode::OK)))
+}
+
+async fn create_file(
+    server_obj: Arc<RwLock<ServerObj>>,
+    path: &String,
+) -> Response<Box<dyn Reply>> {
+    match server_obj.read().await.create_file(path).await {
+        Ok(f) => f,
+        Err(e) => {
+            return Ok(Box::new(reply::with_status(
+                reply::json(&Error {
+                    message: e.to_string(),
+                    error: error::WebError::UnknownError,
+                }),
+                StatusCode::OK,
+            )))
+        }
+    };
+
+    Ok(Box::new(reply::with_status(
+        reply::json(&Error {
+            message: "".into(),
+            error: error::WebError::Success,
+        }),
+        StatusCode::OK,
+    )))
 }

@@ -235,4 +235,10 @@ impl sc::Client for ClientObj {
 
         Ok(buf)
     }
+
+    async fn create_file(&self, file_path: String) -> Result<(), ShadowError> {
+        fs::File::create(file_path).await?;
+
+        Ok(())
+    }
 }

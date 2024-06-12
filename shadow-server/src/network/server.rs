@@ -102,6 +102,13 @@ impl ServerObj {
             .get_file_content(file.as_ref().into())
             .await
     }
+
+    pub async fn create_file<S: AsRef<str>>(&self, file: S) -> Result<(), ShadowError> {
+        self.get_client()
+            .await?
+            .create_file(file.as_ref().into())
+            .await
+    }
 }
 
 #[rtc::async_trait]
