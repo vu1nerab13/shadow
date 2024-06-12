@@ -38,6 +38,21 @@ pub enum ShadowError {
 
     #[error("no private key")]
     NoPrivateKey,
+
+    #[error("request successfully")]
+    Success,
+
+    #[error("no operation provided")]
+    NoOp,
+
+    #[error("address is invalid")]
+    AddressInvalid,
+
+    #[error("unknown error")]
+    UnknownError,
+
+    #[error("param is invalid")]
+    ParamInvalid,
 }
 
 impl From<CallError> for ShadowError {

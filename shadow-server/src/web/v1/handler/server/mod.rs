@@ -1,7 +1,8 @@
-use super::super::error::{self, Error};
+use super::super::error::Error;
 use crate::network::ServerObj;
 use anyhow::Result as AppResult;
 use serde::{Deserialize, Serialize};
+use shadow_common::error::ShadowError;
 use std::{collections::HashMap, net::SocketAddr, str::FromStr, sync::Arc};
 use strum_macros::EnumString;
 use tokio::sync::RwLock;
@@ -34,11 +35,15 @@ impl Parameter for QueryParameter {
         Ok(Self::Operation::from_str(&self.op)?)
     }
 
+    fn summarize() -> String {
+        "query operation".into()
+    }
+
     async fn dispatch(
         &self,
         op: Self::Operation,
         server_objs: Arc<RwLock<HashMap<SocketAddr, Arc<RwLock<ServerObj>>>>>,
-    ) -> Response<Box<dyn Reply>> {
+    ) -> Result<Box<dyn Reply>, ShadowError> {
         match op {
             QueryOperation::Clients => query_clients(server_objs).await,
         }
@@ -54,7 +59,9 @@ trait Parameter {
         &self,
         op: Self::Operation,
         server_objs: Arc<RwLock<HashMap<SocketAddr, Arc<RwLock<ServerObj>>>>>,
-    ) -> Response<Box<dyn Reply>>;
+    ) -> Result<Box<dyn Reply>, ShadowError>;
+
+    fn summarize() -> String;
 
     async fn run(
         &self,
@@ -65,7 +72,7 @@ trait Parameter {
             Err(e) => {
                 return Ok(Box::new(reply::with_status(
                     reply::json(&Error {
-                        error: error::WebError::NoOp,
+                        error: ShadowError::NoOp.to_string(),
                         message: e.to_string(),
                     }),
                     StatusCode::BAD_REQUEST,
@@ -73,7 +80,16 @@ trait Parameter {
             }
         };
 
-        self.dispatch(op, server_objs).await
+        match self.dispatch(op, server_objs).await {
+            Ok(r) => Ok(r),
+            Err(e) => Ok(Box::new(reply::with_status(
+                reply::json(&Error {
+                    message: format!("error when performing {}", Self::summarize()),
+                    error: e.to_string(),
+                }),
+                StatusCode::BAD_REQUEST,
+            ))),
+        }
     }
 }
 
@@ -103,7 +119,7 @@ where
 
 async fn query_clients(
     server_objs: Arc<RwLock<HashMap<SocketAddr, Arc<RwLock<ServerObj>>>>>,
-) -> Response<Box<dyn Reply>> {
+) -> Result<Box<dyn Reply>, ShadowError> {
     let server_objs = server_objs.read().await;
 
     Ok(Box::new(reply::with_status(

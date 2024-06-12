@@ -1,7 +1,4 @@
-use super::{
-    super::super::error::{self, Error},
-    Parameter,
-};
+use super::{super::super::error::Error, Parameter};
 use crate::network::ServerObj;
 use anyhow::Result as AppResult;
 use serde::{Deserialize, Serialize};
@@ -36,19 +33,20 @@ impl Parameter for PowerParameter {
     ) -> Result<Box<dyn Reply>, ShadowError> {
         let (message, error, code) = match server_obj.read().await.system_power(op).await {
             Ok(b) => match b {
-                true => ("".into(), error::WebError::Success, StatusCode::OK),
+                true => ("".into(), ShadowError::Success, StatusCode::OK),
                 false => (
                     "can not perform power action".into(),
-                    error::WebError::UnknownError,
+                    ShadowError::UnknownError,
                     StatusCode::BAD_REQUEST,
                 ),
             },
             Err(e) => (
                 e.to_string(),
-                error::WebError::UnknownError,
+                ShadowError::UnknownError,
                 StatusCode::BAD_REQUEST,
             ),
         };
+        let error = error.to_string();
 
         return Ok(Box::new(reply::with_status(
             reply::json(&Error { message, error }),

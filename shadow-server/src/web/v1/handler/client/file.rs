@@ -1,7 +1,4 @@
-use super::{
-    super::super::error::{self, Error},
-    Parameter,
-};
+use super::{super::super::error::Error, Parameter};
 use crate::network::ServerObj;
 use anyhow::Result as AppResult;
 use serde::{Deserialize, Serialize};
@@ -100,13 +97,7 @@ async fn create(
         false => server_obj.read().await.create_file(path).await,
     }?;
 
-    Ok(Box::new(reply::with_status(
-        reply::json(&Error {
-            message: "".into(),
-            error: error::WebError::Success,
-        }),
-        StatusCode::OK,
-    )))
+    super::success()
 }
 
 async fn write_file(
@@ -120,7 +111,7 @@ async fn write_file(
             return Ok(Box::new(reply::with_status(
                 reply::json(&Error {
                     message: "content not provided".into(),
-                    error: error::WebError::ParamInvalid,
+                    error: ShadowError::ParamInvalid.to_string(),
                 }),
                 StatusCode::BAD_REQUEST,
             )))
@@ -133,13 +124,7 @@ async fn write_file(
         .write_file(path, content.clone())
         .await?;
 
-    Ok(Box::new(reply::with_status(
-        reply::json(&Error {
-            message: "".into(),
-            error: error::WebError::Success,
-        }),
-        StatusCode::OK,
-    )))
+    super::success()
 }
 
 async fn delete_file(
@@ -148,13 +133,7 @@ async fn delete_file(
 ) -> Result<Box<dyn Reply>, ShadowError> {
     server_obj.read().await.delete_file(path).await?;
 
-    Ok(Box::new(reply::with_status(
-        reply::json(&Error {
-            message: "".into(),
-            error: error::WebError::Success,
-        }),
-        StatusCode::OK,
-    )))
+    super::success()
 }
 
 async fn delete_dir_recursive(
@@ -163,11 +142,5 @@ async fn delete_dir_recursive(
 ) -> Result<Box<dyn Reply>, ShadowError> {
     server_obj.read().await.delete_dir_recursive(path).await?;
 
-    Ok(Box::new(reply::with_status(
-        reply::json(&Error {
-            message: "".into(),
-            error: error::WebError::Success,
-        }),
-        StatusCode::OK,
-    )))
+    super::success()
 }

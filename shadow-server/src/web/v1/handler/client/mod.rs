@@ -2,7 +2,7 @@ mod file;
 mod power;
 mod query;
 
-use super::super::error::{self, Error};
+use super::super::error::Error;
 use crate::network::ServerObj;
 use anyhow::Result as AppResult;
 use file::FileParameter;
@@ -44,7 +44,7 @@ trait Parameter {
             Err(e) => {
                 return Ok(Box::new(reply::with_status(
                     reply::json(&Error {
-                        error: error::WebError::NoOp,
+                        error: ShadowError::NoOp.to_string(),
                         message: e.to_string(),
                     }),
                     StatusCode::BAD_REQUEST,
@@ -59,7 +59,7 @@ trait Parameter {
                 return Ok(Box::new(reply::with_status(
                     reply::json(&Error {
                         message: addr.to_string(),
-                        error: error::WebError::ClientNotFound,
+                        error: ShadowError::ClientNotFound.to_string(),
                     }),
                     StatusCode::BAD_REQUEST,
                 )))
@@ -71,7 +71,7 @@ trait Parameter {
             Err(e) => Ok(Box::new(reply::with_status(
                 reply::json(&Error {
                     message: format!("error when performing {}", Self::summarize()),
-                    error: error::WebError::ClientError(e.to_string()),
+                    error: e.to_string(),
                 }),
                 StatusCode::BAD_REQUEST,
             ))),
@@ -121,4 +121,14 @@ where
     T: Parameter,
 {
     param.run(addr, server_objs).await
+}
+
+fn success() -> Result<Box<dyn Reply>, ShadowError> {
+    Ok(Box::new(reply::with_status(
+        reply::json(&Error {
+            message: "perform completed successfully".into(),
+            error: ShadowError::Success.to_string(),
+        }),
+        StatusCode::OK,
+    )))
 }
