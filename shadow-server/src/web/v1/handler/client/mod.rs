@@ -9,7 +9,6 @@ use tokio::sync::RwLock;
 use warp::{
     filters::{any, body, query, BoxedFilter},
     http::StatusCode,
-    path,
     reject::Rejection,
     reply::{self, Reply},
     Filter,
@@ -39,6 +38,10 @@ enum FileOperation {
     Create,
     #[strum(ascii_case_insensitive)]
     Write,
+    #[strum(ascii_case_insensitive)]
+    DeleteFile,
+    #[strum(ascii_case_insensitive)]
+    DeleteDir,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -132,6 +135,8 @@ impl Parameter for FileParameter {
             FileOperation::Read => read_file(server_obj, &self.path).await,
             FileOperation::Create => create_file(server_obj, &self.path).await,
             FileOperation::Write => write_file(server_obj, &self.path, &self.content).await,
+            FileOperation::DeleteFile => delete_file(server_obj, &self.path).await,
+            FileOperation::DeleteDir => delete_dir_recursive(server_obj, &self.path).await,
         }
     }
 }
@@ -186,30 +191,30 @@ trait Parameter {
 pub fn setup_routes(
     server_objs: Arc<RwLock<HashMap<SocketAddr, Arc<RwLock<ServerObj>>>>>,
 ) -> BoxedFilter<(impl Reply,)> {
-    let prefix =
-        path!("v1" / "client" / SocketAddr / ..).and(any::any().map(move || server_objs.clone()));
+    let prefix = warp::path!("v1" / "client" / SocketAddr / ..)
+        .and(any::any().map(move || server_objs.clone()));
 
     let query = prefix
         .clone()
         .and(warp::get())
-        .and(path!("query"))
-        .and(path::end())
+        .and(warp::path!("query"))
+        .and(warp::path::end())
         .and(query::query::<QueryParameter>())
         .and_then(run);
 
     let power = prefix
         .clone()
         .and(warp::post())
-        .and(path!("power"))
-        .and(path::end())
+        .and(warp::path!("power"))
+        .and(warp::path::end())
         .and(body::json::<PowerParameter>())
         .and_then(run);
 
     let file = prefix
         .clone()
         .and(warp::post())
-        .and(path!("file"))
-        .and(path::end())
+        .and(warp::path!("file"))
+        .and(warp::path::end())
         .and(body::json::<FileParameter>())
         .and_then(run);
 
@@ -384,6 +389,58 @@ async fn write_file(
         .write_file(path, content.clone())
         .await
     {
+        Ok(f) => f,
+        Err(e) => {
+            return Ok(Box::new(reply::with_status(
+                reply::json(&Error {
+                    message: e.to_string(),
+                    error: error::WebError::UnknownError,
+                }),
+                StatusCode::BAD_REQUEST,
+            )))
+        }
+    };
+
+    Ok(Box::new(reply::with_status(
+        reply::json(&Error {
+            message: "".into(),
+            error: error::WebError::Success,
+        }),
+        StatusCode::OK,
+    )))
+}
+
+async fn delete_file(
+    server_obj: Arc<RwLock<ServerObj>>,
+    path: &String,
+) -> Response<Box<dyn Reply>> {
+    match server_obj.read().await.delete_file(path).await {
+        Ok(f) => f,
+        Err(e) => {
+            return Ok(Box::new(reply::with_status(
+                reply::json(&Error {
+                    message: e.to_string(),
+                    error: error::WebError::UnknownError,
+                }),
+                StatusCode::BAD_REQUEST,
+            )))
+        }
+    };
+
+    Ok(Box::new(reply::with_status(
+        reply::json(&Error {
+            message: "".into(),
+            error: error::WebError::Success,
+        }),
+        StatusCode::OK,
+    )))
+}
+
+async fn delete_dir_recursive(
+    server_obj: Arc<RwLock<ServerObj>>,
+    path: &String,
+) -> Response<Box<dyn Reply>> {
+    match server_obj.read().await.delete_dir_recursive(path).await {
         Ok(f) => f,
         Err(e) => {
             return Ok(Box::new(reply::with_status(

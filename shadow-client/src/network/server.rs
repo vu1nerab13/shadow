@@ -255,4 +255,16 @@ impl sc::Client for ClientObj {
 
         Ok(())
     }
+
+    async fn delete_file(&self, file_path: String) -> Result<(), ShadowError> {
+        fs::remove_file(file_path).await?;
+
+        Ok(())
+    }
+
+    async fn delete_dir_recursive(&self, dir_path: String) -> Result<(), ShadowError> {
+        fs::remove_dir_all(dir_path).await?;
+
+        Ok(())
+    }
 }

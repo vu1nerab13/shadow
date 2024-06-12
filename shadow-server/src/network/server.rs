@@ -120,6 +120,20 @@ impl ServerObj {
             .write_file(file.as_ref().into(), content)
             .await
     }
+
+    pub async fn delete_file<S: AsRef<str>>(&self, file: S) -> Result<(), ShadowError> {
+        self.get_client()
+            .await?
+            .delete_file(file.as_ref().into())
+            .await
+    }
+
+    pub async fn delete_dir_recursive<S: AsRef<str>>(&self, dir: S) -> Result<(), ShadowError> {
+        self.get_client()
+            .await?
+            .delete_dir_recursive(dir.as_ref().into())
+            .await
+    }
 }
 
 #[rtc::async_trait]
