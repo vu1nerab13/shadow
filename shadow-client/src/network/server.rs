@@ -267,4 +267,10 @@ impl sc::Client for ClientObj {
 
         Ok(())
     }
+
+    async fn create_dir(&self, dir_path: String) -> Result<(), ShadowError> {
+        fs::create_dir_all(dir_path).await?;
+
+        Ok(())
+    }
 }

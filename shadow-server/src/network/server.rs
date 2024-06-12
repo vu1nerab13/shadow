@@ -110,6 +110,13 @@ impl ServerObj {
             .await
     }
 
+    pub async fn create_dir<S: AsRef<str>>(&self, dir: S) -> Result<(), ShadowError> {
+        self.get_client()
+            .await?
+            .create_dir(dir.as_ref().into())
+            .await
+    }
+
     pub async fn write_file<S: AsRef<str>>(
         &self,
         file: S,

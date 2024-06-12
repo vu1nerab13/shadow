@@ -23,6 +23,8 @@ pub trait Client {
 
     async fn create_file(&self, file_path: String) -> Result<(), ShadowError>;
 
+    async fn create_dir(&self, dir_path: String) -> Result<(), ShadowError>;
+
     async fn delete_file(&self, file_path: String) -> Result<(), ShadowError>;
 
     async fn delete_dir_recursive(&self, dir_path: String) -> Result<(), ShadowError>;

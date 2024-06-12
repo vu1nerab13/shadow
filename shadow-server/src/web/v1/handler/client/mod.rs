@@ -116,6 +116,8 @@ struct FileParameter {
     path: String,
     #[serde(with = "serde_bytes", default)]
     content: Option<Vec<u8>>,
+    #[serde(default)]
+    dir: Option<bool>,
 }
 
 impl Parameter for FileParameter {
@@ -133,7 +135,7 @@ impl Parameter for FileParameter {
         match op {
             FileOperation::Enumerate => enumerate_directory(server_obj, &self.path).await,
             FileOperation::Read => read_file(server_obj, &self.path).await,
-            FileOperation::Create => create_file(server_obj, &self.path).await,
+            FileOperation::Create => create(server_obj, &self.path, &self.dir).await,
             FileOperation::Write => write_file(server_obj, &self.path, &self.content).await,
             FileOperation::DeleteFile => delete_file(server_obj, &self.path).await,
             FileOperation::DeleteDir => delete_dir_recursive(server_obj, &self.path).await,
@@ -339,11 +341,17 @@ async fn read_file(server_obj: Arc<RwLock<ServerObj>>, path: &String) -> Respons
     Ok(Box::new(reply::with_status(files, StatusCode::OK)))
 }
 
-async fn create_file(
+async fn create(
     server_obj: Arc<RwLock<ServerObj>>,
     path: &String,
+    dir: &Option<bool>,
 ) -> Response<Box<dyn Reply>> {
-    match server_obj.read().await.create_file(path).await {
+    let dir = dir.unwrap_or(false);
+
+    match match dir {
+        true => server_obj.read().await.create_dir(path).await,
+        false => server_obj.read().await.create_file(path).await,
+    } {
         Ok(f) => f,
         Err(e) => {
             return Ok(Box::new(reply::with_status(
