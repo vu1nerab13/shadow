@@ -19,4 +19,3 @@ strum = "0.26.2"
 strum_macros = "0.26"
 crabgrab = { version = "0.3.7", features = ["wgpu", "screenshot", "metal", "dxgi"] }
 wgpu = "0.20.0"
-psutil = "3.2.1"

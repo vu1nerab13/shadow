@@ -1,5 +1,4 @@
 use crabgrab::{capturable_content::CapturableContentError, feature::screenshot::ScreenshotError};
-use psutil::process::ProcessError;
 use remoc::rtc::CallError;
 use serde::{Deserialize, Serialize};
 use std::io;
@@ -83,11 +82,5 @@ impl From<io::Error> for ShadowError {
 impl From<ScreenshotError> for ShadowError {
     fn from(err: ScreenshotError) -> Self {
         Self::IoError(err.to_string())
-    }
-}
-
-impl From<ProcessError> for ShadowError {
-    fn from(err: ProcessError) -> Self {
-        Self::KillProcessError(err.to_string())
     }
 }
