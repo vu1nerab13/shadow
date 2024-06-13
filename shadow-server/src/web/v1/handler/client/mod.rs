@@ -168,3 +168,13 @@ fn success() -> Result<Box<dyn Reply>, ShadowError> {
         StatusCode::OK,
     )))
 }
+
+fn require<T, S: AsRef<str>>(opt: Option<T>, description: S) -> Result<T, ShadowError>
+where
+    T: Clone,
+{
+    opt.ok_or(ShadowError::ParamInvalid(format!(
+        "{} not provided",
+        description.as_ref()
+    )))
+}

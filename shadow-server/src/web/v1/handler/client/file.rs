@@ -1,4 +1,4 @@
-use super::{super::super::error::Error, Parameter};
+use super::Parameter;
 use crate::network::ServerObj;
 use anyhow::Result as AppResult;
 use serde::{Deserialize, Serialize};
@@ -105,24 +105,9 @@ async fn write_file(
     path: &String,
     content: &Option<Vec<u8>>,
 ) -> Result<Box<dyn Reply>, ShadowError> {
-    let content = match content {
-        Some(c) => c,
-        None => {
-            return Ok(Box::new(reply::with_status(
-                reply::json(&Error {
-                    message: "content not provided".into(),
-                    error: ShadowError::ParamInvalid.to_string(),
-                }),
-                StatusCode::BAD_REQUEST,
-            )))
-        }
-    };
+    let content = super::require(content.clone(), "file content")?;
 
-    server_obj
-        .read()
-        .await
-        .write_file(path, content.clone())
-        .await?;
+    server_obj.read().await.write_file(path, content).await?;
 
     super::success()
 }

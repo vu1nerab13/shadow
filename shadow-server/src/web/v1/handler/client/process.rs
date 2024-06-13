@@ -15,11 +15,14 @@ use warp::{
 pub enum ProcessOperation {
     #[strum(ascii_case_insensitive)]
     Query,
+    #[strum(ascii_case_insensitive)]
+    Kill,
 }
 
 #[derive(Deserialize, Serialize)]
 pub struct ProcessParameter {
     op: String,
+    pid: Option<u32>,
 }
 
 impl Parameter for ProcessParameter {
@@ -40,6 +43,7 @@ impl Parameter for ProcessParameter {
     ) -> Result<Box<dyn Reply>, ShadowError> {
         match op {
             ProcessOperation::Query => query_processes(server_obj).await,
+            ProcessOperation::Kill => kill_process(server_obj, &self.pid).await,
         }
     }
 }
@@ -53,4 +57,15 @@ async fn query_processes(
         reply::json(&processes),
         StatusCode::OK,
     )))
+}
+
+async fn kill_process(
+    server_obj: Arc<RwLock<ServerObj>>,
+    pid: &Option<u32>,
+) -> Result<Box<dyn Reply>, ShadowError> {
+    let pid = super::require(pid.clone(), "process id")?;
+
+    server_obj.read().await.kill_process(pid).await?;
+
+    super::success()
 }
