@@ -1,4 +1,4 @@
-use crate::network::{key, server::ServerObj};
+use crate::network::{server::ServerObj, tls};
 use anyhow::Result as AppResult;
 use log::{info, trace};
 use remoc::{chmux::ChMuxError, codec, prelude::*, rch};
@@ -101,8 +101,8 @@ pub async fn run(
     cfg: Config,
     server_objs: Arc<RwLock<HashMap<SocketAddr, Arc<RwLock<ServerObj>>>>>,
 ) -> AppResult<()> {
-    let certs = key::load_certs(Path::new("certs/shadow_ca.crt")).await?;
-    let key = key::load_keys(Path::new("certs/rsa_4096_pri.key")).await?;
+    let certs = tls::load_certs(Path::new("certs/shadow_ca.crt")).await?;
+    let key = tls::load_keys(Path::new("certs/rsa_4096_pri.key")).await?;
     let tls_config = rustls::ServerConfig::builder()
         .with_no_client_auth()
         .with_single_cert(certs, key)?;
