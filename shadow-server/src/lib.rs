@@ -4,6 +4,7 @@ pub mod web;
 
 use clap::Parser;
 
+/// Server command line arguments
 #[derive(Parser, Debug)]
 #[command(
     version,

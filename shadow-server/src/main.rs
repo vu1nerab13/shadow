@@ -1,3 +1,17 @@
+/*!
+ * *Shadow RAT*
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ *
+ * 2024.6.13
+ */
+
 use anyhow::Result as AppResult;
 use clap::Parser;
 use flexi_logger::Logger;
@@ -5,8 +19,10 @@ use shadow_server::{network, web, AppArgs};
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::RwLock;
 
+/// Main entry point
 #[tokio::main]
 async fn main() -> AppResult<()> {
+    // Parse arguments
     let args = AppArgs::parse();
 
     // Start logging

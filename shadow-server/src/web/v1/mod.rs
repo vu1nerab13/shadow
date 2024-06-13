@@ -6,6 +6,7 @@ use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 use tokio::sync::RwLock;
 use warp::{filters::BoxedFilter, reply::Reply, Filter};
 
+/// Setup web routes
 pub fn setup_routes(
     server_objs: Arc<RwLock<HashMap<SocketAddr, Arc<RwLock<ServerObj>>>>>,
 ) -> BoxedFilter<(impl Reply,)> {

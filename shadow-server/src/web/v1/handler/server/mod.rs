@@ -93,6 +93,7 @@ trait Parameter {
     }
 }
 
+/// Setup server routes
 pub fn setup_routes(
     server_objs: Arc<RwLock<HashMap<SocketAddr, Arc<RwLock<ServerObj>>>>>,
 ) -> BoxedFilter<(impl Reply,)> {
