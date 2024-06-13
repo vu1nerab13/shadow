@@ -4,4 +4,5 @@ flexi
 ocsp
 pemfile
 rustls
+shlex
 thiserror

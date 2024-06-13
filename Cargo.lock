@@ -2711,13 +2711,11 @@ dependencies = [
  "flexi_logger",
  "installed",
  "log",
- "psutil",
  "remoc",
  "rustls",
  "rustls-pemfile",
  "rustls-pki-types",
  "shadow-common",
- "shell-words",
  "shlex",
  "sysinfo",
  "system_shutdown",
@@ -2768,12 +2766,6 @@ dependencies = [
  "uuid",
  "warp",
 ]
-
-[[package]]
-name = "shell-words"
-version = "1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "24188a676b6ae68c3b2cb3a01be17fbf7240ce009799bb56d5b1409051e78fde"
 
 [[package]]
 name = "shlex"

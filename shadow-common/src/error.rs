@@ -52,6 +52,9 @@ pub enum ShadowError {
     #[error("unknown error")]
     UnknownError,
 
+    #[error("process not found, message: {0}")]
+    ProcessNotFound(String),
+
     #[error("param is invalid, message: {0}")]
     ParamInvalid(String),
 

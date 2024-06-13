@@ -4,7 +4,6 @@ use crabgrab::{
     capture_stream::{CaptureConfig, CaptureStream},
     feature::{bitmap::VideoFrameBitmap, screenshot},
 };
-use psutil::process::Process;
 use remoc::{codec, prelude::*};
 use shadow_common::{
     client::{self as sc, PixelFormat, SystemPowerAction},
@@ -12,8 +11,8 @@ use shadow_common::{
     server as ss,
 };
 use shlex::Shlex;
-use std::{ffi::OsStr, path::Path, sync::Arc};
-use sysinfo::System;
+use std::{path::Path, sync::Arc};
+use sysinfo::{Pid, Process, System};
 use tokio::{
     fs,
     io::{AsyncReadExt, AsyncWriteExt},
@@ -276,9 +275,14 @@ impl sc::Client for ClientObj {
     }
 
     async fn kill_process(&self, pid: u32) -> Result<(), ShadowError> {
-        Process::new(pid)?.kill()?;
-
-        Ok(())
+        match System::new_all()
+            .process(Pid::from_u32(pid))
+            .ok_or(ShadowError::ProcessNotFound(pid.to_string()))?
+            .kill()
+        {
+            true => Ok(()),
+            false => Err(ShadowError::UnknownError),
+        }
     }
 
     async fn open_file(&self, file_path: String) -> Result<String, ShadowError> {
