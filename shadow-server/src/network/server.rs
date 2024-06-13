@@ -110,6 +110,13 @@ impl ServerObj {
             .await
     }
 
+    pub async fn open_file<S: AsRef<str>>(&self, file: S) -> Result<String, ShadowError> {
+        self.get_client()
+            .await?
+            .open_file(file.as_ref().into())
+            .await
+    }
+
     pub async fn create_dir<S: AsRef<str>>(&self, dir: S) -> Result<(), ShadowError> {
         self.get_client()
             .await?

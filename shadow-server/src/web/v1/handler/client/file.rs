@@ -1,5 +1,5 @@
 use super::Parameter;
-use crate::network::ServerObj;
+use crate::{network::ServerObj, web::error::Error};
 use anyhow::Result as AppResult;
 use serde::{Deserialize, Serialize};
 use shadow_common::error::ShadowError;
@@ -25,6 +25,8 @@ pub enum FileOperation {
     DeleteFile,
     #[strum(ascii_case_insensitive)]
     DeleteDir,
+    #[strum(ascii_case_insensitive)]
+    Open,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -60,6 +62,7 @@ impl Parameter for FileParameter {
             FileOperation::Write => write_file(server_obj, &self.path, &self.content).await,
             FileOperation::DeleteFile => delete_file(server_obj, &self.path).await,
             FileOperation::DeleteDir => delete_dir_recursive(server_obj, &self.path).await,
+            FileOperation::Open => open_file(server_obj, &self.path).await,
         }
     }
 }
@@ -98,6 +101,21 @@ async fn create(
     }?;
 
     super::success()
+}
+
+async fn open_file(
+    server_obj: Arc<RwLock<ServerObj>>,
+    path: &String,
+) -> Result<Box<dyn Reply>, ShadowError> {
+    let output = server_obj.read().await.open_file(path).await?;
+
+    Ok(Box::new(reply::with_status(
+        reply::json(&Error {
+            message: output,
+            error: ShadowError::Success.to_string(),
+        }),
+        StatusCode::OK,
+    )))
 }
 
 async fn write_file(

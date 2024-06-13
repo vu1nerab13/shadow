@@ -5,8 +5,7 @@ mod power;
 mod process;
 mod query;
 
-use super::super::error::Error;
-use crate::network::ServerObj;
+use crate::{network::ServerObj, web::error::Error};
 use anyhow::Result as AppResult;
 use app::AppParameter;
 use display::DisplayParameter;

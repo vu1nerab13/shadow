@@ -11,11 +11,13 @@ use shadow_common::{
     error::ShadowError,
     server as ss,
 };
-use std::{path::Path, sync::Arc};
+use shlex::Shlex;
+use std::{ffi::OsStr, path::Path, sync::Arc};
 use sysinfo::System;
 use tokio::{
     fs,
     io::{AsyncReadExt, AsyncWriteExt},
+    process::Command,
     sync::RwLock,
 };
 
@@ -277,5 +279,21 @@ impl sc::Client for ClientObj {
         Process::new(pid)?.kill()?;
 
         Ok(())
+    }
+
+    async fn open_file(&self, file_path: String) -> Result<String, ShadowError> {
+        let mut lex = Shlex::new(&file_path);
+        let app = lex
+            .next()
+            .ok_or(ShadowError::ParamInvalid("no file specified".into()))?;
+        let mut command = Command::new(app);
+
+        for arg in lex {
+            command.arg(arg);
+        }
+
+        let output = command.output().await?;
+
+        Ok(String::from_utf8_lossy(&output.stdout).into())
     }
 }
