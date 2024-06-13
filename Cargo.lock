@@ -2636,7 +2636,7 @@ dependencies = [
 
 [[package]]
 name = "shadow-client"
-version = "1.0.1"
+version = "1.1.0"
 dependencies = [
  "anyhow",
  "bincode",
@@ -2660,7 +2660,7 @@ dependencies = [
 
 [[package]]
 name = "shadow-common"
-version = "1.0.1"
+version = "1.1.0"
 dependencies = [
  "crabgrab",
  "installed",
@@ -2676,7 +2676,7 @@ dependencies = [
 
 [[package]]
 name = "shadow-server"
-version = "1.0.1"
+version = "1.1.0"
 dependencies = [
  "anyhow",
  "bincode",

@@ -12,7 +12,7 @@ use shadow_common::{
 };
 use shlex::Shlex;
 use std::{path::Path, sync::Arc};
-use sysinfo::{Pid, Process, System};
+use sysinfo::{Pid, System};
 use tokio::{
     fs,
     io::{AsyncReadExt, AsyncWriteExt},
