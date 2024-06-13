@@ -12,25 +12,25 @@ use warp::{
 };
 
 #[derive(EnumString, Deserialize, Serialize)]
-pub enum QueryOperation {
+pub enum AppOperation {
     #[strum(ascii_case_insensitive)]
-    Summary,
+    Query,
 }
 
 #[derive(Deserialize, Serialize)]
-pub struct QueryParameter {
+pub struct AppParameter {
     op: String,
 }
 
-impl Parameter for QueryParameter {
-    type Operation = QueryOperation;
+impl Parameter for AppParameter {
+    type Operation = AppOperation;
 
     fn operation(&self) -> AppResult<Self::Operation> {
         Ok(Self::Operation::from_str(&self.op)?)
     }
 
     fn summarize() -> String {
-        "query operation".into()
+        "app operation".into()
     }
 
     async fn dispatch(
@@ -39,16 +39,16 @@ impl Parameter for QueryParameter {
         server_obj: Arc<RwLock<ServerObj>>,
     ) -> Result<Box<dyn Reply>, ShadowError> {
         match op {
-            QueryOperation::Summary => summarize_client(server_obj).await,
+            AppOperation::Query => query_apps(server_obj).await,
         }
     }
 }
 
-async fn summarize_client(
-    server_obj: Arc<RwLock<ServerObj>>,
-) -> Result<Box<dyn Reply>, ShadowError> {
+async fn query_apps(server_obj: Arc<RwLock<ServerObj>>) -> Result<Box<dyn Reply>, ShadowError> {
+    let apps = server_obj.read().await.get_installed_apps().await?;
+
     Ok(Box::new(reply::with_status(
-        reply::json(&server_obj.read().await.summary()),
+        reply::json(&apps),
         StatusCode::OK,
     )))
 }

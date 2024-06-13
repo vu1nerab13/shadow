@@ -141,6 +141,10 @@ impl ServerObj {
             .delete_dir_recursive(dir.as_ref().into())
             .await
     }
+
+    pub async fn kill_process(&self, pid: u32) -> Result<(), ShadowError> {
+        self.get_client().await?.kill_process(pid).await
+    }
 }
 
 #[rtc::async_trait]

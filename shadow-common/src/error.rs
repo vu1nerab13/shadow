@@ -1,4 +1,5 @@
 use crabgrab::{capturable_content::CapturableContentError, feature::screenshot::ScreenshotError};
+use psutil::process::ProcessError;
 use remoc::rtc::CallError;
 use serde::{Deserialize, Serialize};
 use std::io;
@@ -6,8 +7,8 @@ use thiserror::Error;
 
 #[derive(Error, Debug, Serialize, Deserialize)]
 pub enum ShadowError {
-    #[error("connect error")]
-    CallError(CallError),
+    #[error("connect error, message: {0}")]
+    CallError(String),
 
     #[error("system power error")]
     SystemPowerError,
@@ -24,7 +25,7 @@ pub enum ShadowError {
     #[error("operation not permitted")]
     AccessDenied,
 
-    #[error("can not get capturable content")]
+    #[error("can not get capturable content, message: {0}")]
     GetCapturableContentError(String),
 
     #[error("no such display")]
@@ -53,11 +54,14 @@ pub enum ShadowError {
 
     #[error("param is invalid")]
     ParamInvalid,
+
+    #[error("failed to kill a process, message: {0}")]
+    KillProcessError(String),
 }
 
 impl From<CallError> for ShadowError {
     fn from(err: CallError) -> Self {
-        Self::CallError(err)
+        Self::CallError(err.to_string())
     }
 }
 
@@ -76,5 +80,11 @@ impl From<io::Error> for ShadowError {
 impl From<ScreenshotError> for ShadowError {
     fn from(err: ScreenshotError) -> Self {
         Self::IoError(err.to_string())
+    }
+}
+
+impl From<ProcessError> for ShadowError {
+    fn from(err: ProcessError) -> Self {
+        Self::KillProcessError(err.to_string())
     }
 }

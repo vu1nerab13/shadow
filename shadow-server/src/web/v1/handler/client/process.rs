@@ -12,25 +12,25 @@ use warp::{
 };
 
 #[derive(EnumString, Deserialize, Serialize)]
-pub enum QueryOperation {
+pub enum ProcessOperation {
     #[strum(ascii_case_insensitive)]
-    Summary,
+    Query,
 }
 
 #[derive(Deserialize, Serialize)]
-pub struct QueryParameter {
+pub struct ProcessParameter {
     op: String,
 }
 
-impl Parameter for QueryParameter {
-    type Operation = QueryOperation;
+impl Parameter for ProcessParameter {
+    type Operation = ProcessOperation;
 
     fn operation(&self) -> AppResult<Self::Operation> {
         Ok(Self::Operation::from_str(&self.op)?)
     }
 
     fn summarize() -> String {
-        "query operation".into()
+        "process operation".into()
     }
 
     async fn dispatch(
@@ -39,16 +39,18 @@ impl Parameter for QueryParameter {
         server_obj: Arc<RwLock<ServerObj>>,
     ) -> Result<Box<dyn Reply>, ShadowError> {
         match op {
-            QueryOperation::Summary => summarize_client(server_obj).await,
+            ProcessOperation::Query => query_processes(server_obj).await,
         }
     }
 }
 
-async fn summarize_client(
+async fn query_processes(
     server_obj: Arc<RwLock<ServerObj>>,
 ) -> Result<Box<dyn Reply>, ShadowError> {
+    let processes = server_obj.read().await.get_processes().await?;
+
     Ok(Box::new(reply::with_status(
-        reply::json(&server_obj.read().await.summary()),
+        reply::json(&processes),
         StatusCode::OK,
     )))
 }

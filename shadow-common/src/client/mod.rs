@@ -17,6 +17,8 @@ pub trait Client {
 
     async fn get_processes(&self) -> Result<Vec<Process>, ShadowError>;
 
+    async fn kill_process(&self, pid: u32) -> Result<(), ShadowError>;
+
     async fn get_file_list(&self, dir: String) -> Result<Vec<File>, ShadowError>;
 
     async fn get_file_content(&self, file_path: String) -> Result<Vec<u8>, ShadowError>;

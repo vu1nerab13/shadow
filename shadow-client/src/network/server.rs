@@ -4,6 +4,7 @@ use crabgrab::{
     capture_stream::{CaptureConfig, CaptureStream},
     feature::{bitmap::VideoFrameBitmap, screenshot},
 };
+use psutil::process::Process;
 use remoc::{codec, prelude::*};
 use shadow_common::{
     client::{self as sc, PixelFormat, SystemPowerAction},
@@ -268,6 +269,12 @@ impl sc::Client for ClientObj {
 
     async fn create_dir(&self, dir_path: String) -> Result<(), ShadowError> {
         fs::create_dir_all(dir_path).await?;
+
+        Ok(())
+    }
+
+    async fn kill_process(&self, pid: u32) -> Result<(), ShadowError> {
+        Process::new(pid)?.kill()?;
 
         Ok(())
     }

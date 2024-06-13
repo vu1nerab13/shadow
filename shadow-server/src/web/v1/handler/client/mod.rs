@@ -1,12 +1,18 @@
+mod app;
+mod display;
 mod file;
 mod power;
+mod process;
 mod query;
 
 use super::super::error::Error;
 use crate::network::ServerObj;
 use anyhow::Result as AppResult;
+use app::AppParameter;
+use display::DisplayParameter;
 use file::FileParameter;
 use power::PowerParameter;
+use process::ProcessParameter;
 use query::QueryParameter;
 use shadow_common::error::ShadowError;
 use std::{collections::HashMap, net::SocketAddr, sync::Arc};
@@ -109,7 +115,37 @@ pub fn setup_routes(
         .and(body::json::<FileParameter>())
         .and_then(run);
 
-    query.or(power).or(file).boxed()
+    let process = prefix
+        .clone()
+        .and(warp::post())
+        .and(warp::path!("process"))
+        .and(warp::path::end())
+        .and(body::json::<ProcessParameter>())
+        .and_then(run);
+
+    let display = prefix
+        .clone()
+        .and(warp::post())
+        .and(warp::path!("display"))
+        .and(warp::path::end())
+        .and(body::json::<DisplayParameter>())
+        .and_then(run);
+
+    let app = prefix
+        .clone()
+        .and(warp::post())
+        .and(warp::path!("app"))
+        .and(warp::path::end())
+        .and(body::json::<AppParameter>())
+        .and_then(run);
+
+    query
+        .or(power)
+        .or(file)
+        .or(process)
+        .or(display)
+        .or(app)
+        .boxed()
 }
 
 async fn run<T>(
