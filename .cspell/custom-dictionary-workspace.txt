@@ -1,5 +1,6 @@
 # Custom Dictionary Words
 chmux
+flexi
 ocsp
 pemfile
 rustls
