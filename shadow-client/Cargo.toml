@@ -26,3 +26,4 @@ rustls-pki-types = "1.7.0"
 rustls = { version = "0.23.9" }
 shlex = "1.3.0"
 clap = { version = "4.5.7", features = ["derive"] }
+display-info = "0.5.1"

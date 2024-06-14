@@ -50,6 +50,9 @@ pub enum ShadowError {
     #[error("unknown error")]
     UnknownError,
 
+    #[error("failed to get display")]
+    GetDisplayError(String),
+
     #[error("process not found, message: {0}")]
     ProcessNotFound(String),
 
@@ -66,5 +69,11 @@ impl From<CallError> for ShadowError {
 impl From<io::Error> for ShadowError {
     fn from(err: io::Error) -> Self {
         Self::IoError(err.to_string())
+    }
+}
+
+impl From<anyhow::Error> for ShadowError {
+    fn from(err: anyhow::Error) -> Self {
+        Self::GetDisplayError(err.to_string())
     }
 }

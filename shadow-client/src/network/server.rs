@@ -1,7 +1,8 @@
 use crate::misc;
+use display_info::DisplayInfo;
 use remoc::{codec, prelude::*};
 use shadow_common::{
-    client::{self as sc, SystemPowerAction},
+    client::{self as sc, CallResult},
     error::ShadowError,
     server as ss,
 };
@@ -45,13 +46,13 @@ impl ClientObj {
 
 #[rtc::async_trait]
 impl sc::Client for ClientObj {
-    async fn handshake(&self) -> Result<sc::Handshake, ShadowError> {
+    async fn handshake(&self) -> CallResult<sc::Handshake> {
         Ok(sc::Handshake {
             message: format!("{:#?}", self.cfg),
         })
     }
 
-    async fn get_system_info(&self) -> Result<sc::SystemInfo, ShadowError> {
+    async fn get_system_info(&self) -> CallResult<sc::SystemInfo> {
         let mut system = System::new_all();
         system.refresh_all();
 
@@ -68,20 +69,20 @@ impl sc::Client for ClientObj {
         })
     }
 
-    async fn system_power(&self, action: SystemPowerAction) -> Result<bool, ShadowError> {
+    async fn system_power(&self, action: sc::SystemPowerAction) -> CallResult<()> {
         match match action {
-            SystemPowerAction::Shutdown => system_shutdown::shutdown(),
-            SystemPowerAction::Reboot => system_shutdown::reboot(),
-            SystemPowerAction::Logout => system_shutdown::logout(),
-            SystemPowerAction::Sleep => system_shutdown::sleep(),
-            SystemPowerAction::Hibernate => system_shutdown::hibernate(),
+            sc::SystemPowerAction::Shutdown => system_shutdown::shutdown(),
+            sc::SystemPowerAction::Reboot => system_shutdown::reboot(),
+            sc::SystemPowerAction::Logout => system_shutdown::logout(),
+            sc::SystemPowerAction::Sleep => system_shutdown::sleep(),
+            sc::SystemPowerAction::Hibernate => system_shutdown::hibernate(),
         } {
-            Ok(_) => Ok(true),
+            Ok(_) => Ok(()),
             Err(_) => Err(ShadowError::SystemPowerError),
         }
     }
 
-    async fn get_installed_apps(&self) -> Result<Vec<sc::App>, ShadowError> {
+    async fn get_installed_apps(&self) -> CallResult<Vec<sc::App>> {
         match installed::list() {
             Ok(l) => Ok(l
                 .filter(|app| app.name().to_string().is_empty() == false)
@@ -95,7 +96,7 @@ impl sc::Client for ClientObj {
         }
     }
 
-    async fn get_processes(&self) -> Result<Vec<sc::Process>, ShadowError> {
+    async fn get_processes(&self) -> CallResult<Vec<sc::Process>> {
         let mut system = System::new();
         system.refresh_processes();
 
@@ -128,7 +129,7 @@ impl sc::Client for ClientObj {
             .collect())
     }
 
-    async fn get_file_list(&self, dir: String) -> Result<Vec<sc::File>, ShadowError> {
+    async fn get_file_list(&self, dir: String) -> CallResult<Vec<sc::File>> {
         let mut ret = Vec::new();
         let mut list = fs::read_dir(&dir)
             .await
@@ -163,7 +164,7 @@ impl sc::Client for ClientObj {
         Ok(ret)
     }
 
-    async fn get_file_content(&self, file_path: String) -> Result<Vec<u8>, ShadowError> {
+    async fn get_file_content(&self, file_path: String) -> CallResult<Vec<u8>> {
         let mut buf = Vec::new();
         fs::File::open(file_path)
             .await?
@@ -173,13 +174,13 @@ impl sc::Client for ClientObj {
         Ok(buf)
     }
 
-    async fn create_file(&self, file_path: String) -> Result<(), ShadowError> {
+    async fn create_file(&self, file_path: String) -> CallResult<()> {
         fs::File::create(file_path).await?;
 
         Ok(())
     }
 
-    async fn write_file(&self, file_path: String, content: Vec<u8>) -> Result<(), ShadowError> {
+    async fn write_file(&self, file_path: String, content: Vec<u8>) -> CallResult<()> {
         let mut file = fs::OpenOptions::new().write(true).open(file_path).await?;
         file.write_all(&content).await?;
         file.flush().await?;
@@ -187,25 +188,25 @@ impl sc::Client for ClientObj {
         Ok(())
     }
 
-    async fn delete_file(&self, file_path: String) -> Result<(), ShadowError> {
+    async fn delete_file(&self, file_path: String) -> CallResult<()> {
         fs::remove_file(file_path).await?;
 
         Ok(())
     }
 
-    async fn delete_dir_recursive(&self, dir_path: String) -> Result<(), ShadowError> {
+    async fn delete_dir_recursive(&self, dir_path: String) -> CallResult<()> {
         fs::remove_dir_all(dir_path).await?;
 
         Ok(())
     }
 
-    async fn create_dir(&self, dir_path: String) -> Result<(), ShadowError> {
+    async fn create_dir(&self, dir_path: String) -> CallResult<()> {
         fs::create_dir_all(dir_path).await?;
 
         Ok(())
     }
 
-    async fn kill_process(&self, pid: u32) -> Result<(), ShadowError> {
+    async fn kill_process(&self, pid: u32) -> CallResult<()> {
         match System::new_all()
             .process(Pid::from_u32(pid))
             .ok_or(ShadowError::ProcessNotFound(pid.to_string()))?
@@ -216,19 +217,26 @@ impl sc::Client for ClientObj {
         }
     }
 
-    async fn open_file(&self, file_path: String) -> Result<String, ShadowError> {
+    async fn open_file(&self, file_path: String) -> CallResult<String> {
         let mut lex = Shlex::new(&file_path);
         let app = lex
             .next()
             .ok_or(ShadowError::ParamInvalid("no file specified".into()))?;
         let mut command = Command::new(app);
 
-        for arg in lex {
+        lex.for_each(|arg| {
             command.arg(arg);
-        }
+        });
 
         let output = command.output().await?;
 
         Ok(String::from_utf8_lossy(&output.stdout).into())
+    }
+
+    async fn get_display_info(&self) -> CallResult<Vec<sc::Display>> {
+        Ok(DisplayInfo::all()?
+            .into_iter()
+            .map(|i| sc::Display::from(i))
+            .collect())
     }
 }

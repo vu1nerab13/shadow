@@ -51,3 +51,27 @@ pub enum SystemPowerAction {
     #[strum(ascii_case_insensitive)]
     Hibernate,
 }
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct Display {
+    /// The Display Name
+    pub name: String,
+    /// Unique identifier associated with the display.
+    pub id: u32,
+    /// The display x coordinate.
+    pub x: i32,
+    /// The display x coordinate.
+    pub y: i32,
+    /// The display pixel width.
+    pub width: u32,
+    /// The display pixel height.
+    pub height: u32,
+    /// Can be 0, 90, 180, 270, represents screen rotation in clock-wise degrees.
+    pub rotation: f32,
+    /// Output device's pixel scale factor.
+    pub scale_factor: f32,
+    /// The display refresh rate.
+    pub frequency: f32,
+    /// Whether the screen is the main screen
+    pub is_primary: bool,
+}

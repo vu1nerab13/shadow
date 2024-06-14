@@ -3,7 +3,7 @@ use log::trace;
 use remoc::{chmux::ChMuxError, codec, prelude::*};
 use serde::{Deserialize, Serialize};
 use shadow_common::{
-    client::{self as sc, Client, SystemPowerAction},
+    client::{self as sc, Client},
     error::ShadowError,
     server as ss,
 };
@@ -73,7 +73,7 @@ impl ServerObj {
         true
     }
 
-    pub async fn system_power(&self, action: SystemPowerAction) -> Result<bool, ShadowError> {
+    pub async fn system_power(&self, action: sc::SystemPowerAction) -> Result<(), ShadowError> {
         self.get_client().await?.system_power(action).await
     }
 
@@ -147,6 +147,10 @@ impl ServerObj {
 
     pub async fn kill_process(&self, pid: u32) -> Result<(), ShadowError> {
         self.get_client().await?.kill_process(pid).await
+    }
+
+    pub async fn get_display_info(&self) -> Result<Vec<sc::Display>, ShadowError> {
+        self.get_client().await?.get_display_info().await
     }
 }
 
