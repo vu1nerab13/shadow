@@ -6,16 +6,10 @@ use shadow_common::error::ShadowError;
 use std::{str::FromStr, sync::Arc};
 use strum_macros::EnumString;
 use tokio::sync::RwLock;
-use warp::{
-    http::StatusCode,
-    reply::{self, Reply},
-};
+use warp::reply::Reply;
 
 #[derive(EnumString, Deserialize, Serialize)]
-pub enum DisplayOperation {
-    #[strum(ascii_case_insensitive)]
-    Query,
-}
+pub enum DisplayOperation {}
 
 #[derive(Deserialize, Serialize)]
 pub struct DisplayParameter {
@@ -36,19 +30,8 @@ impl Parameter for DisplayParameter {
     async fn dispatch(
         &self,
         op: Self::Operation,
-        server_obj: Arc<RwLock<ServerObj>>,
+        _server_obj: Arc<RwLock<ServerObj>>,
     ) -> Result<Box<dyn Reply>, ShadowError> {
-        match op {
-            DisplayOperation::Query => query_displays(server_obj).await,
-        }
+        match op {}
     }
-}
-
-async fn query_displays(server_obj: Arc<RwLock<ServerObj>>) -> Result<Box<dyn Reply>, ShadowError> {
-    let displays = server_obj.read().await.get_displays().await?;
-
-    Ok(Box::new(reply::with_status(
-        reply::json(&displays),
-        StatusCode::OK,
-    )))
 }

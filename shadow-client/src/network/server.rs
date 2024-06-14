@@ -1,12 +1,7 @@
 use crate::misc;
-use crabgrab::{
-    capturable_content::{CapturableContent, CapturableContentFilter},
-    capture_stream::{CaptureConfig, CaptureStream},
-    feature::{bitmap::VideoFrameBitmap, screenshot},
-};
 use remoc::{codec, prelude::*};
 use shadow_common::{
-    client::{self as sc, PixelFormat, SystemPowerAction},
+    client::{self as sc, SystemPowerAction},
     error::ShadowError,
     server as ss,
 };
@@ -166,70 +161,6 @@ impl sc::Client for ClientObj {
         }
 
         Ok(ret)
-    }
-
-    async fn get_displays(&self) -> Result<Vec<sc::Display>, ShadowError> {
-        let content = CapturableContent::new(CapturableContentFilter::EVERYTHING).await?;
-        Ok(content
-            .displays()
-            .map(|d| sc::Display { rect: d.rect() })
-            .collect())
-    }
-
-    async fn get_pixel_formats(&self) -> Result<Vec<sc::PixelFormat>, ShadowError> {
-        Ok(CaptureStream::supported_pixel_formats()
-            .into_iter()
-            .map(|p| PixelFormat { 0: *p })
-            .collect())
-    }
-
-    async fn get_screenshot(
-        &self,
-        n_display: usize,
-        format: sc::PixelFormat,
-    ) -> Result<sc::Frame, ShadowError> {
-        let token = match CaptureStream::test_access(false) {
-            Some(t) => t,
-            None => match CaptureStream::request_access(false).await {
-                Some(t) => t,
-                None => return Err(ShadowError::AccessDenied),
-            },
-        };
-
-        let content = CapturableContent::new(CapturableContentFilter::EVERYTHING).await?;
-        let display = match content.displays().nth(n_display) {
-            Some(d) => d,
-            None => return Err(ShadowError::NoSuchDisplay),
-        };
-
-        let config = CaptureConfig::with_display(display, format.0);
-        let bitmap = screenshot::take_screenshot(token, config)
-            .await?
-            .get_bitmap()
-            .map_err(|err| ShadowError::GetCapturableContentError(err.to_string()))?;
-
-        Ok(match bitmap {
-            crabgrab::feature::bitmap::FrameBitmap::BgraUnorm8x4(f) => sc::Frame {
-                frame_type: sc::FrameType::BgraUnorm8x4(f.data.to_vec()),
-                height: f.height,
-                width: f.width,
-            },
-            crabgrab::feature::bitmap::FrameBitmap::RgbaUnormPacked1010102(f) => sc::Frame {
-                frame_type: sc::FrameType::RgbaUnormPacked1010102(f.data.to_vec()),
-                height: f.height,
-                width: f.width,
-            },
-            crabgrab::feature::bitmap::FrameBitmap::RgbaF16x4(_) => {
-                // TODO: Fix this
-
-                return Err(ShadowError::Unsupported);
-            }
-            crabgrab::feature::bitmap::FrameBitmap::YCbCr(_) => {
-                // TODO: Fix this
-
-                return Err(ShadowError::Unsupported);
-            }
-        })
     }
 
     async fn get_file_content(&self, file_path: String) -> Result<Vec<u8>, ShadowError> {

@@ -85,10 +85,6 @@ impl ServerObj {
         self.get_client().await?.get_processes().await
     }
 
-    pub async fn get_displays(&self) -> Result<Vec<sc::Display>, ShadowError> {
-        self.get_client().await?.get_displays().await
-    }
-
     pub async fn get_file_list<S: AsRef<str>>(&self, dir: S) -> Result<Vec<sc::File>, ShadowError> {
         self.get_client()
             .await?

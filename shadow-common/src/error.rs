@@ -1,4 +1,3 @@
-use crabgrab::{capturable_content::CapturableContentError, feature::screenshot::ScreenshotError};
 use remoc::rtc::CallError;
 use serde::{Deserialize, Serialize};
 use std::io;
@@ -64,20 +63,8 @@ impl From<CallError> for ShadowError {
     }
 }
 
-impl From<CapturableContentError> for ShadowError {
-    fn from(err: CapturableContentError) -> Self {
-        Self::GetCapturableContentError(err.to_string())
-    }
-}
-
 impl From<io::Error> for ShadowError {
     fn from(err: io::Error) -> Self {
-        Self::IoError(err.to_string())
-    }
-}
-
-impl From<ScreenshotError> for ShadowError {
-    fn from(err: ScreenshotError) -> Self {
         Self::IoError(err.to_string())
     }
 }
