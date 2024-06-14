@@ -1,8 +1,12 @@
 # Custom Dictionary Words
 chmux
+choco
 flexi
+MSVC
 ocsp
 pemfile
+proto
 rustls
 shlex
 thiserror
+tlsv

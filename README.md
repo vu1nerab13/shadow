@@ -3,7 +3,7 @@
 [![Rust](https://github.com/vu1nerab13/shadow/actions/workflows/build.yml/badge.svg)](https://github.com/vu1nerab13/shadow/actions/workflows/build.yml)
 *A high performance rat server and client written in 100% safe rust*
 
-# Build (WSL)
+# Build (WSL & macOS)
 
 Install rust
 ```bash
@@ -17,6 +17,34 @@ git clone https://github.com/vu1nerab13/shadow.git
 
 Build
 ```bash
+cd shadow
+cargo build
+```
+
+Run
+```bash
+cargo run
+```
+
+# Build (Windows with MSVC)
+
+Install chocolatey
+```powershell
+Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+```
+
+Install build tools
+```powershell
+choco install cmake ninja rust-ms llvm visualstudio2022buildtools
+```
+
+Clone repository
+```powershell
+git clone https://github.com/vu1nerab13/shadow.git
+```
+
+Build
+```powershell
 cd shadow
 cargo build
 ```
