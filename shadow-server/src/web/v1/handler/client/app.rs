@@ -14,7 +14,7 @@ use warp::{
 #[derive(EnumString, Deserialize, Serialize)]
 pub enum AppOperation {
     #[strum(ascii_case_insensitive)]
-    Query,
+    Enumerate,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -39,7 +39,7 @@ impl Parameter for AppParameter {
         server_obj: Arc<RwLock<ServerObj>>,
     ) -> Result<Box<dyn Reply>, ShadowError> {
         match op {
-            AppOperation::Query => query_apps(server_obj).await,
+            AppOperation::Enumerate => query_apps(server_obj).await,
         }
     }
 }

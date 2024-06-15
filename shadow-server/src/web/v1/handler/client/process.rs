@@ -14,7 +14,7 @@ use warp::{
 #[derive(EnumString, Deserialize, Serialize)]
 pub enum ProcessOperation {
     #[strum(ascii_case_insensitive)]
-    Query,
+    Enumerate,
     #[strum(ascii_case_insensitive)]
     Kill,
 }
@@ -42,7 +42,7 @@ impl Parameter for ProcessParameter {
         server_obj: Arc<RwLock<ServerObj>>,
     ) -> Result<Box<dyn Reply>, ShadowError> {
         match op {
-            ProcessOperation::Query => query_processes(server_obj).await,
+            ProcessOperation::Enumerate => query_processes(server_obj).await,
             ProcessOperation::Kill => kill_process(server_obj, &self.pid).await,
         }
     }

@@ -4,25 +4,28 @@ use std::io::Write;
 use std::path::Path;
 use std::process::Command;
 
-/// Get version that combined with git and `CARGO_PKG_VERSION`
 fn get_git_version() -> String {
     let version = env::var("CARGO_PKG_VERSION").unwrap();
+    let git_hash = String::from_utf8(
+        Command::new("git")
+            .args(["describe", "--always"])
+            .output()
+            .unwrap()
+            .stdout,
+    )
+    .unwrap();
 
-    let child = Command::new("git").args(["describe", "--always"]).output();
-    match child {
-        Ok(child) => {
-            let buf = String::from_utf8(child.stdout).expect("failed to read stdout");
-            version + "-" + &buf
-        }
-        Err(err) => {
-            eprintln!("`git describe` err: {}", err);
-            version
-        }
-    }
+    format!("{} - {}", version, git_hash)
+}
+
+fn write_version() {
+    let version = get_git_version();
+    File::create(Path::new(&env::var("OUT_DIR").unwrap()).join("VERSION"))
+        .unwrap()
+        .write_all(version.trim().as_bytes())
+        .unwrap();
 }
 
 fn main() {
-    let version = get_git_version();
-    let mut f = File::create(Path::new(&env::var("OUT_DIR").unwrap()).join("VERSION")).unwrap();
-    f.write_all(version.trim().as_bytes()).unwrap();
+    write_version();
 }

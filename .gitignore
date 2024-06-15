@@ -1,4 +1,5 @@
 # Build files
 target/
 
+# macOS file
 .DS_Store

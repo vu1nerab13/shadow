@@ -3,7 +3,7 @@ use crate::network::ServerObj;
 use anyhow::Result as AppResult;
 use serde::{Deserialize, Serialize};
 use shadow_common::error::ShadowError;
-use std::{str::FromStr, sync::Arc};
+use std::{collections::HashMap, net::SocketAddr, str::FromStr, sync::Arc};
 use strum_macros::EnumString;
 use tokio::sync::RwLock;
 use warp::{
@@ -12,43 +12,50 @@ use warp::{
 };
 
 #[derive(EnumString, Deserialize, Serialize)]
-pub enum DisplayOperation {
+pub enum QueryOperation {
     #[strum(ascii_case_insensitive)]
-    Enumerate,
+    Clients,
 }
 
 #[derive(Deserialize, Serialize)]
-pub struct DisplayParameter {
+pub struct QueryParameter {
     op: String,
 }
 
-impl Parameter for DisplayParameter {
-    type Operation = DisplayOperation;
+impl Parameter for QueryParameter {
+    type Operation = QueryOperation;
 
     fn operation(&self) -> AppResult<Self::Operation> {
         Ok(Self::Operation::from_str(&self.op)?)
     }
 
     fn summarize() -> String {
-        "display operation".into()
+        "query operation".into()
     }
 
     async fn dispatch(
         &self,
         op: Self::Operation,
-        server_obj: Arc<RwLock<ServerObj>>,
+        server_objs: Arc<RwLock<HashMap<SocketAddr, Arc<RwLock<ServerObj>>>>>,
     ) -> Result<Box<dyn Reply>, ShadowError> {
         match op {
-            DisplayOperation::Enumerate => query_displays(server_obj).await,
+            QueryOperation::Clients => query_clients(server_objs).await,
         }
     }
 }
 
-async fn query_displays(server_obj: Arc<RwLock<ServerObj>>) -> Result<Box<dyn Reply>, ShadowError> {
-    let displays = server_obj.read().await.get_display_info().await?;
+async fn query_clients(
+    server_objs: Arc<RwLock<HashMap<SocketAddr, Arc<RwLock<ServerObj>>>>>,
+) -> Result<Box<dyn Reply>, ShadowError> {
+    let server_objs = server_objs.read().await;
 
     Ok(Box::new(reply::with_status(
-        reply::json(&displays),
+        reply::json(
+            &server_objs
+                .keys()
+                .map(|addr: &SocketAddr| addr.to_string())
+                .collect::<Vec<_>>(),
+        ),
         StatusCode::OK,
     )))
 }
