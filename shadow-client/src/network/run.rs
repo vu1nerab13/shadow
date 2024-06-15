@@ -13,10 +13,7 @@ use shadow_common::{
 };
 use std::{net::SocketAddr, sync::Arc, time::Duration};
 use tokio::{io, net::TcpStream, sync::RwLock, time};
-use tokio_rustls::{
-    rustls::{self},
-    TlsConnector,
-};
+use tokio_rustls::{rustls, TlsConnector};
 
 pub struct Config {
     addr: SocketAddr,
