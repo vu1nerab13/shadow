@@ -1,5 +1,9 @@
-mod version;
+mod embed;
 
 pub fn get_version() -> String {
-    version::VERSION.into()
+    embed::VERSION.into()
+}
+
+pub fn get_cert() -> String {
+    embed::CERT.into()
 }

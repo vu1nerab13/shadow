@@ -1,4 +1,5 @@
 # Custom Dictionary Words
+buildtools
 chmux
 choco
 flexi

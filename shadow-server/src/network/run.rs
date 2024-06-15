@@ -1,6 +1,6 @@
 use crate::network::{server::ServerObj, tls};
 use anyhow::Result as AppResult;
-use log::{info, trace};
+use log::info;
 use remoc::{chmux::ChMuxError, codec, prelude::*, rch};
 use shadow_common::{
     client::{self as sc, Client},
@@ -36,6 +36,7 @@ fn run_server(
     tokio::spawn(async move {
         server.serve(true).await;
 
+        info!("{}: disconnected", addr);
         server_objs.write().await.remove(&addr);
     });
 
@@ -126,7 +127,7 @@ pub async fn run(
             server_obj.write().await.client = Some(client_client.clone());
             server_obj.write().await.task = Some(task);
 
-            trace!("{}: connected", addr);
+            info!("{}: connected", addr);
             handle_connection(addr, server_obj, client_client).await?;
 
             Ok::<(), anyhow::Error>(())

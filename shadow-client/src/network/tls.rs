@@ -1,7 +1,7 @@
+use crate::misc;
 use anyhow::Result as AppResult;
 use rustls::client::danger::ServerCertVerifier;
 use std::io::Cursor;
-use tokio::{fs::File, io::AsyncReadExt};
 use tokio_rustls::rustls::{self, RootCertStore};
 
 #[derive(Debug)]
@@ -52,11 +52,7 @@ impl ServerCertVerifier for NoCertificateVerification {
 
 pub async fn add_to_ca() -> AppResult<RootCertStore> {
     let mut root_cert_store = rustls::RootCertStore::empty();
-    let mut content = Vec::new();
-    File::open("certs/shadow_ca.crt")
-        .await?
-        .read_to_end(&mut content)
-        .await?;
+    let content = misc::get_cert();
 
     for cert in rustls_pemfile::certs(&mut Cursor::new(content)) {
         root_cert_store.add(cert?)?;
