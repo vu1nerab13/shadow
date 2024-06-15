@@ -1,5 +1,5 @@
-mod version;
+mod embed;
 
 pub fn get_version() -> String {
-    version::VERSION.into()
+    embed::VERSION.into()
 }
