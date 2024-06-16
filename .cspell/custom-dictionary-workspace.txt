@@ -3,6 +3,7 @@ buildtools
 chmux
 choco
 flexi
+Libcrypto
 MSVC
 ocsp
 pemfile

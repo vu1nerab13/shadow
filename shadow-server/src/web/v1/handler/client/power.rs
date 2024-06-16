@@ -32,7 +32,11 @@ impl Parameter for PowerParameter {
         server_obj: Arc<RwLock<ServerObj>>,
     ) -> Result<Box<dyn Reply>, ShadowError> {
         let (message, error, code) = match server_obj.read().await.system_power(op).await {
-            Ok(_) => ("".into(), ShadowError::Success, StatusCode::OK),
+            Ok(_) => (
+                "power action successfully completed".into(),
+                ShadowError::Success,
+                StatusCode::OK,
+            ),
             Err(e) => (
                 e.to_string(),
                 ShadowError::UnknownError,

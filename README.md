@@ -3,6 +3,10 @@
 [![Rust](https://github.com/vu1nerab13/shadow/actions/workflows/build.yml/badge.svg)](https://github.com/vu1nerab13/shadow/actions/workflows/build.yml)
 *A high performance rat server and client written in 100% safe rust*
 
+# Pre-requirements
+
+1. [AWS Libcrypto](https://aws.github.io/aws-lc-rs/requirements/index.html)
+
 # Build (WSL & macOS)
 
 Install rust
@@ -53,6 +57,9 @@ Run
 ```bash
 cargo run
 ```
+
+# Web API Docs
+See `README.md` in shadow-server/src/web/
 
 # License
 
