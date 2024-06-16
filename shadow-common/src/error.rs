@@ -47,6 +47,9 @@ pub enum ShadowError {
     #[error("address is invalid")]
     AddressInvalid,
 
+    #[error("no task found, disconnect error")]
+    DisconnectError,
+
     #[error("unknown error")]
     UnknownError,
 

@@ -70,30 +70,28 @@ impl sc::Client for ClientObj {
     }
 
     async fn system_power(&self, action: sc::SystemPowerAction) -> CallResult<()> {
-        match match action {
+        match action {
             sc::SystemPowerAction::Shutdown => system_shutdown::shutdown(),
             sc::SystemPowerAction::Reboot => system_shutdown::reboot(),
             sc::SystemPowerAction::Logout => system_shutdown::logout(),
             sc::SystemPowerAction::Sleep => system_shutdown::sleep(),
             sc::SystemPowerAction::Hibernate => system_shutdown::hibernate(),
-        } {
-            Ok(_) => Ok(()),
-            Err(_) => Err(ShadowError::SystemPowerError),
         }
+        .map_err(|_| ShadowError::SystemPowerError)?;
+
+        Ok(())
     }
 
     async fn get_installed_apps(&self) -> CallResult<Vec<sc::App>> {
-        match installed::list() {
-            Ok(l) => Ok(l
-                .filter(|app| app.name().to_string().is_empty() == false)
-                .map(|app| sc::App {
-                    name: app.name().to_string(),
-                    publisher: app.publisher().to_string(),
-                    version: app.version().to_string(),
-                })
-                .collect()),
-            Err(e) => Err(ShadowError::QueryAppsError(e.to_string())),
-        }
+        Ok(installed::list()
+            .map_err(|e| ShadowError::QueryAppsError(e.to_string()))?
+            .filter(|app| app.name().to_string().is_empty() == false)
+            .map(|app| sc::App {
+                name: app.name().to_string(),
+                publisher: app.publisher().to_string(),
+                version: app.version().to_string(),
+            })
+            .collect())
     }
 
     async fn get_processes(&self) -> CallResult<Vec<sc::Process>> {

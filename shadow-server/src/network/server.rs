@@ -3,7 +3,7 @@ use log::trace;
 use remoc::{chmux::ChMuxError, codec, prelude::*};
 use serde::{Deserialize, Serialize};
 use shadow_common::{
-    client::{self as sc, Client},
+    client::{self as sc, CallResult, Client},
     error::ShadowError,
     server as ss,
 };
@@ -50,113 +50,108 @@ impl ServerObj {
     /// Get the client instance which connected to the server
     pub async fn get_client(
         &self,
-    ) -> Result<RwLockReadGuard<sc::ClientClient<codec::Bincode>>, ShadowError> {
-        match &self.client {
-            Some(c) => Ok(c.read().await),
-            None => return Err(ShadowError::ClientNotFound),
-        }
+    ) -> CallResult<RwLockReadGuard<sc::ClientClient<codec::Bincode>>> {
+        Ok(self
+            .client
+            .as_ref()
+            .ok_or(ShadowError::ClientNotFound)?
+            .read()
+            .await)
     }
 
     pub fn summary(&self) -> sc::SystemInfo {
         self.info.clone()
     }
 
-    pub fn disconnect(&self) -> bool {
-        let task = match &self.task {
-            Some(t) => t,
-            None => return false,
-        };
+    pub fn disconnect(&self) -> CallResult<()> {
+        self.task
+            .as_ref()
+            .ok_or(ShadowError::DisconnectError)?
+            .abort();
 
-        // Abort this task
-        task.abort();
-
-        true
+        Ok(())
     }
 
-    pub async fn system_power(&self, action: sc::SystemPowerAction) -> Result<(), ShadowError> {
+    pub async fn system_power(&self, action: sc::SystemPowerAction) -> CallResult<()> {
         self.get_client().await?.system_power(action).await
     }
 
-    pub async fn get_installed_apps(&self) -> Result<Vec<sc::App>, ShadowError> {
+    pub async fn get_installed_apps(&self) -> CallResult<Vec<sc::App>> {
         self.get_client().await?.get_installed_apps().await
     }
 
-    pub async fn get_processes(&self) -> Result<Vec<sc::Process>, ShadowError> {
+    pub async fn get_processes(&self) -> CallResult<Vec<sc::Process>> {
         self.get_client().await?.get_processes().await
     }
 
-    pub async fn get_file_list<S: AsRef<str>>(&self, dir: S) -> Result<Vec<sc::File>, ShadowError> {
+    pub async fn get_file_list<S: AsRef<str>>(&self, dir: S) -> CallResult<Vec<sc::File>> {
         self.get_client()
             .await?
             .get_file_list(dir.as_ref().into())
             .await
     }
 
-    pub async fn get_file_content<S: AsRef<str>>(&self, file: S) -> Result<Vec<u8>, ShadowError> {
+    pub async fn get_file_content<S: AsRef<str>>(&self, file: S) -> CallResult<Vec<u8>> {
         self.get_client()
             .await?
             .get_file_content(file.as_ref().into())
             .await
     }
 
-    pub async fn create_file<S: AsRef<str>>(&self, file: S) -> Result<(), ShadowError> {
+    pub async fn create_file<S: AsRef<str>>(&self, file: S) -> CallResult<()> {
         self.get_client()
             .await?
             .create_file(file.as_ref().into())
             .await
     }
 
-    pub async fn open_file<S: AsRef<str>>(&self, file: S) -> Result<String, ShadowError> {
+    pub async fn open_file<S: AsRef<str>>(&self, file: S) -> CallResult<String> {
         self.get_client()
             .await?
             .open_file(file.as_ref().into())
             .await
     }
 
-    pub async fn create_dir<S: AsRef<str>>(&self, dir: S) -> Result<(), ShadowError> {
+    pub async fn create_dir<S: AsRef<str>>(&self, dir: S) -> CallResult<()> {
         self.get_client()
             .await?
             .create_dir(dir.as_ref().into())
             .await
     }
 
-    pub async fn write_file<S: AsRef<str>>(
-        &self,
-        file: S,
-        content: Vec<u8>,
-    ) -> Result<(), ShadowError> {
+    pub async fn write_file<S: AsRef<str>>(&self, file: S, content: Vec<u8>) -> CallResult<()> {
         self.get_client()
             .await?
             .write_file(file.as_ref().into(), content)
             .await
     }
 
-    pub async fn delete_file<S: AsRef<str>>(&self, file: S) -> Result<(), ShadowError> {
+    pub async fn delete_file<S: AsRef<str>>(&self, file: S) -> CallResult<()> {
         self.get_client()
             .await?
             .delete_file(file.as_ref().into())
             .await
     }
 
-    pub async fn delete_dir_recursive<S: AsRef<str>>(&self, dir: S) -> Result<(), ShadowError> {
+    pub async fn delete_dir_recursive<S: AsRef<str>>(&self, dir: S) -> CallResult<()> {
         self.get_client()
             .await?
             .delete_dir_recursive(dir.as_ref().into())
             .await
     }
 
-    pub async fn kill_process(&self, pid: u32) -> Result<(), ShadowError> {
+    pub async fn kill_process(&self, pid: u32) -> CallResult<()> {
         self.get_client().await?.kill_process(pid).await
     }
 
-    pub async fn get_display_info(&self) -> Result<Vec<sc::Display>, ShadowError> {
+    pub async fn get_display_info(&self) -> CallResult<Vec<sc::Display>> {
         self.get_client().await?.get_display_info().await
     }
 }
 
 #[rtc::async_trait]
 impl ss::Server for ServerObj {
-    async fn handshake(&self) -> Result<ss::Handshake, ShadowError> {
+    async fn handshake(&self) -> CallResult<ss::Handshake> {
         trace!("{}: handshake", self.addr);
 
         Ok(ss::Handshake {
