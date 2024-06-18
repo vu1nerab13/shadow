@@ -1,5 +1,6 @@
 use crate::misc;
 use display_info::DisplayInfo;
+use local_encoding::{Encoder, Encoding};
 use remoc::{codec, prelude::*};
 use shadow_common::{
     client::{self as sc, CallResult},
@@ -7,7 +8,7 @@ use shadow_common::{
     server as ss,
 };
 use shlex::Shlex;
-use std::{ffi::OsString, os::unix::ffi::OsStringExt, path::Path, sync::Arc};
+use std::{path::Path, sync::Arc};
 use sysinfo::{Pid, System};
 use tokio::{
     fs,
@@ -228,7 +229,7 @@ impl sc::Client for ClientObj {
 
         let result = command.output().await?;
         let status = result.status.to_string();
-        let output = OsString::from_vec(result.stdout).to_string_lossy().into();
+        let output = Encoding::OEM.to_string(&result.stdout)?;
 
         Ok(sc::Execute { status, output })
     }
