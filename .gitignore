@@ -3,3 +3,5 @@ target/
 
 # macOS file
 .DS_Store
+
+/.idea

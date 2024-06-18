@@ -27,7 +27,7 @@ pub trait Client {
 
     async fn create_file(&self, file_path: String) -> CallResult<()>;
 
-    async fn open_file(&self, file_path: String) -> CallResult<String>;
+    async fn open_file(&self, file_path: String) -> CallResult<Execute>;
 
     async fn create_dir(&self, dir_path: String) -> CallResult<()>;
 

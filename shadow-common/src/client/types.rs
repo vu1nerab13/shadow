@@ -75,3 +75,9 @@ pub struct Display {
     /// Whether the screen is the main screen
     pub is_primary: bool,
 }
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct Execute {
+    pub output: String,
+    pub status: String,
+}

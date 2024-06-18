@@ -105,7 +105,7 @@ impl ServerObj {
             .await
     }
 
-    pub async fn open_file<S: AsRef<str>>(&self, file: S) -> CallResult<String> {
+    pub async fn open_file<S: AsRef<str>>(&self, file: S) -> CallResult<sc::Execute> {
         self.get_client()
             .await?
             .open_file(file.as_ref().into())

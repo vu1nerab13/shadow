@@ -1,5 +1,5 @@
 use super::Parameter;
-use crate::{network::ServerObj, web::error::Error};
+use crate::network::ServerObj;
 use anyhow::Result as AppResult;
 use serde::{Deserialize, Serialize};
 use shadow_common::error::ShadowError;
@@ -110,10 +110,7 @@ async fn open_file(
     let output = server_obj.read().await.open_file(path).await?;
 
     Ok(Box::new(reply::with_status(
-        reply::json(&Error {
-            message: output,
-            error: ShadowError::Success.to_string(),
-        }),
+        reply::json(&output),
         StatusCode::OK,
     )))
 }

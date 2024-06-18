@@ -7,7 +7,7 @@ use shadow_common::{
     server as ss,
 };
 use shlex::Shlex;
-use std::{path::Path, sync::Arc};
+use std::{ffi::OsString, os::unix::ffi::OsStringExt, path::Path, sync::Arc};
 use sysinfo::{Pid, System};
 use tokio::{
     fs,
@@ -215,7 +215,7 @@ impl sc::Client for ClientObj {
         }
     }
 
-    async fn open_file(&self, file_path: String) -> CallResult<String> {
+    async fn open_file(&self, file_path: String) -> CallResult<sc::Execute> {
         let mut lex = Shlex::new(&file_path);
         let app = lex
             .next()
@@ -226,9 +226,11 @@ impl sc::Client for ClientObj {
             command.arg(arg);
         });
 
-        let output = command.output().await?;
+        let result = command.output().await?;
+        let status = result.status.to_string();
+        let output = OsString::from_vec(result.stdout).to_string_lossy().into();
 
-        Ok(String::from_utf8_lossy(&output.stdout).into())
+        Ok(sc::Execute { status, output })
     }
 
     async fn get_display_info(&self) -> CallResult<Vec<sc::Display>> {
