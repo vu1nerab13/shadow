@@ -1,4 +1,5 @@
 use remoc::rtc::CallError;
+use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use std::io;
 use thiserror::Error;
@@ -61,6 +62,9 @@ pub enum ShadowError {
 
     #[error("param is invalid, message: {0}")]
     ParamInvalid(String),
+
+    #[error("Requesting {0} error, message: {1}")]
+    RequestError(String, String),
 }
 
 impl From<CallError> for ShadowError {
@@ -78,5 +82,16 @@ impl From<io::Error> for ShadowError {
 impl From<anyhow::Error> for ShadowError {
     fn from(err: anyhow::Error) -> Self {
         Self::GetDisplayError(err.to_string())
+    }
+}
+
+impl From<reqwest::Error> for ShadowError {
+    fn from(err: reqwest::Error) -> Self {
+        Self::RequestError(
+            err.url()
+                .unwrap_or(&Url::parse("http://unknown.com/").unwrap())
+                .to_string(),
+            err.to_string(),
+        )
     }
 }

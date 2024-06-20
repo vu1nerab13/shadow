@@ -19,3 +19,4 @@ strum = "0.26.2"
 strum_macros = "0.26"
 display-info = "0.5.1"
 anyhow = "1.0.82"
+reqwest = { version = "0.12", features = ["json"] }

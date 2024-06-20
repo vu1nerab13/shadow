@@ -29,3 +29,4 @@ rustls-pemfile = "2.1.2"
 rustls-pki-types = "1.7.0"
 serde_bytes = "0.11.14"
 clap = { version = "4.5.7", features = ["derive"] }
+reqwest = { version = "0.12", features = ["json"] }

@@ -8,6 +8,7 @@ MSVC
 ocsp
 pemfile
 proto
+reqwest
 rustls
 shlex
 thiserror

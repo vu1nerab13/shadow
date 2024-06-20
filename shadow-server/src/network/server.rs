@@ -7,7 +7,10 @@ use shadow_common::{
     error::ShadowError,
     server as ss,
 };
-use std::{net::SocketAddr, sync::Arc};
+use std::{
+    net::{IpAddr, SocketAddr},
+    sync::Arc,
+};
 use tokio::{
     sync::{RwLock, RwLockReadGuard},
     task::JoinHandle,
@@ -57,6 +60,10 @@ impl ServerObj {
             .ok_or(ShadowError::ClientNotFound)?
             .read()
             .await)
+    }
+
+    pub fn get_ip(&self) -> IpAddr {
+        self.addr.ip()
     }
 
     pub fn summary(&self) -> sc::SystemInfo {

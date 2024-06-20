@@ -2,7 +2,7 @@ use super::Parameter;
 use crate::network::ServerObj;
 use anyhow::Result as AppResult;
 use serde::{Deserialize, Serialize};
-use shadow_common::error::ShadowError;
+use shadow_common::{client as sc, error::ShadowError};
 use std::{str::FromStr, sync::Arc};
 use strum_macros::EnumString;
 use tokio::sync::RwLock;
@@ -47,8 +47,43 @@ impl Parameter for QueryParameter {
 async fn summarize_client(
     server_obj: Arc<RwLock<ServerObj>>,
 ) -> Result<Box<dyn Reply>, ShadowError> {
+    #![allow(non_snake_case)]
+    #[derive(Serialize, Deserialize)]
+    struct GetIpReply {
+        status: String,
+        message: Option<String>,
+        country: Option<String>,
+        countryCode: Option<String>,
+        region: Option<String>,
+        regionName: Option<String>,
+        city: Option<String>,
+        zip: Option<String>,
+        lat: Option<String>,
+        lon: Option<String>,
+        timezone: Option<String>,
+        isp: Option<String>,
+        org: Option<String>,
+        r#as: Option<String>,
+        query: String,
+    }
+
+    #[derive(Serialize, Deserialize)]
+    struct Summary {
+        ip: GetIpReply,
+        info: sc::SystemInfo,
+    }
+
+    let server_obj = server_obj.read().await;
+    let ip = reqwest::get(format!("http://ip-api.com/json/{}", server_obj.get_ip()))
+        .await?
+        .json::<GetIpReply>()
+        .await?;
+
     Ok(Box::new(reply::with_status(
-        reply::json(&server_obj.read().await.summary()),
+        reply::json(&Summary {
+            ip,
+            info: server_obj.summary(),
+        }),
         StatusCode::OK,
     )))
 }
