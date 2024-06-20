@@ -3,16 +3,18 @@ mod display;
 mod file;
 mod power;
 mod process;
+mod proxy;
 mod query;
 
 use crate::{network::ServerObj, web::error::Error};
 use anyhow::Result as AppResult;
-use app::AppParameter;
-use display::DisplayParameter;
-use file::FileParameter;
-use power::PowerParameter;
-use process::ProcessParameter;
-use query::QueryParameter;
+use app::App as AppParameter;
+use display::Display as DisplayParameter;
+use file::File as FileParameter;
+use power::Power as PowerParameter;
+use process::Process as ProcessParameter;
+use proxy::Proxy as ProxyParameter;
+use query::Query as QueryParameter;
 use shadow_common::error::ShadowError;
 use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 use tokio::sync::RwLock;
@@ -138,12 +140,21 @@ pub fn setup_routes(
         .and(body::json::<AppParameter>())
         .and_then(run);
 
+    let proxy = prefix
+        .clone()
+        .and(warp::post())
+        .and(warp::path!("proxy"))
+        .and(warp::path::end())
+        .and(body::json::<ProxyParameter>())
+        .and_then(run);
+
     query
         .or(power)
         .or(file)
         .or(process)
         .or(display)
         .or(app)
+        .or(proxy)
         .boxed()
 }
 

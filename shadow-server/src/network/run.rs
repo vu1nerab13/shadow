@@ -113,10 +113,10 @@ pub async fn run(
     loop {
         let server_objs = server_objs.clone();
         let acceptor = acceptor.clone();
-        let (socket, addr) = listener.accept().await?;
+        let (stream, addr) = listener.accept().await?;
 
         tokio::spawn(async move {
-            let socket = acceptor.accept(socket).await?;
+            let socket = acceptor.accept(stream).await?;
             let (server_obj, server_client) = run_server(addr, server_objs.clone())?;
             let (task, mut tx, mut rx) = connect_client(socket).await?;
 

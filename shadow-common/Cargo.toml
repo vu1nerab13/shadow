@@ -20,3 +20,7 @@ strum_macros = "0.26"
 display-info = "0.5.1"
 anyhow = "1.0.82"
 reqwest = { version = "0.12", features = ["json"] }
+tokio-util = "0.7.11"
+bytes = "1.6.0"
+futures = "0.3.30"
+tokio = { version = "1.37.0", features = ["full"] }

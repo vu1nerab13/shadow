@@ -5,28 +5,37 @@ use crate::network::ServerObj;
 use anyhow::Result as AppResult;
 use serde::{Deserialize, Serialize};
 use shadow_common::error::ShadowError;
-use std::{collections::HashMap, net::SocketAddr, str::FromStr, sync::Arc};
+use std::{str::FromStr, sync::Arc};
 use strum_macros::EnumString;
 use tokio::sync::RwLock;
-use warp::{
-    http::StatusCode,
-    reply::{self, Reply},
-};
+use warp::reply::Reply;
 
 #[derive(EnumString, Deserialize, Serialize)]
 pub enum ProxyOperation {
     #[strum(ascii_case_insensitive)]
-    Socks5,
+    Socks5Open,
+    #[strum(ascii_case_insensitive)]
+    Socks5Close,
 }
 
 #[derive(Deserialize, Serialize)]
-pub struct ProxyParameter {
+pub struct Proxy {
     op: String,
-    addr: Vec<String>,
-    port: u32,
+    #[serde(default = "default_addr")]
+    addr: String,
+    #[serde(default = "default_port")]
+    port: u16,
 }
 
-impl Parameter for ProxyParameter {
+fn default_addr() -> String {
+    "0.0.0.0".into()
+}
+
+fn default_port() -> u16 {
+    9999
+}
+
+impl Parameter for Proxy {
     type Operation = ProxyOperation;
 
     fn operation(&self) -> AppResult<Self::Operation> {
@@ -40,10 +49,11 @@ impl Parameter for ProxyParameter {
     async fn dispatch(
         &self,
         op: Self::Operation,
-        server_objs: Arc<RwLock<HashMap<SocketAddr, Arc<RwLock<ServerObj>>>>>,
+        server_obj: Arc<RwLock<ServerObj>>,
     ) -> Result<Box<dyn Reply>, ShadowError> {
         match op {
-            ProxyOperation::Socks5 => todo!(),
+            ProxyOperation::Socks5Open => socks5::open(server_obj, &self.addr, self.port).await,
+            ProxyOperation::Socks5Close => socks5::close(server_obj, &self.addr, self.port).await,
         }
     }
 }

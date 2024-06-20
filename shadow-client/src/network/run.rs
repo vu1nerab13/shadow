@@ -51,11 +51,11 @@ async fn connect_server(
     rch::base::Sender<ObjectType>,
     rch::base::Receiver<ObjectType>,
 )> {
-    let socket = TcpStream::connect(addr).await?;
-    let socket = connector
-        .connect(ServerName::IpAddress(addr.ip().into()), socket)
+    let stream = TcpStream::connect(addr).await?;
+    let stream = connector
+        .connect(ServerName::IpAddress(addr.ip().into()), stream)
         .await?;
-    let (socket_rx, socket_tx) = io::split(socket);
+    let (socket_rx, socket_tx) = io::split(stream);
     let (conn, tx, rx): (
         _,
         rch::base::Sender<ObjectType>,

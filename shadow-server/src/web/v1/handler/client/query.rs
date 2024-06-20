@@ -18,11 +18,11 @@ pub enum QueryOperation {
 }
 
 #[derive(Deserialize, Serialize)]
-pub struct QueryParameter {
+pub struct Query {
     op: String,
 }
 
-impl Parameter for QueryParameter {
+impl Parameter for Query {
     type Operation = QueryOperation;
 
     fn operation(&self) -> AppResult<Self::Operation> {

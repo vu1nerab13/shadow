@@ -30,7 +30,7 @@ pub enum FileOperation {
 }
 
 #[derive(Deserialize, Serialize)]
-pub struct FileParameter {
+pub struct File {
     op: String,
     path: String,
     #[serde(with = "serde_bytes", default)]
@@ -39,7 +39,7 @@ pub struct FileParameter {
     dir: Option<bool>,
 }
 
-impl Parameter for FileParameter {
+impl Parameter for File {
     type Operation = FileOperation;
 
     fn operation(&self) -> AppResult<Self::Operation> {

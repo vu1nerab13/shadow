@@ -11,11 +11,11 @@ use warp::{
 };
 
 #[derive(Deserialize, Serialize)]
-pub struct PowerParameter {
+pub struct Power {
     op: String,
 }
 
-impl Parameter for PowerParameter {
+impl Parameter for Power {
     type Operation = SystemPowerAction;
 
     fn operation(&self) -> AppResult<Self::Operation> {

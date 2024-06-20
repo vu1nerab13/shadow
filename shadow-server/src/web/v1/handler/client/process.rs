@@ -20,12 +20,12 @@ pub enum ProcessOperation {
 }
 
 #[derive(Deserialize, Serialize)]
-pub struct ProcessParameter {
+pub struct Process {
     op: String,
     pid: Option<u32>,
 }
 
-impl Parameter for ProcessParameter {
+impl Parameter for Process {
     type Operation = ProcessOperation;
 
     fn operation(&self) -> AppResult<Self::Operation> {

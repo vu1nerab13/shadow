@@ -18,11 +18,11 @@ pub enum DisplayOperation {
 }
 
 #[derive(Deserialize, Serialize)]
-pub struct DisplayParameter {
+pub struct Display {
     op: String,
 }
 
-impl Parameter for DisplayParameter {
+impl Parameter for Display {
     type Operation = DisplayOperation;
 
     fn operation(&self) -> AppResult<Self::Operation> {

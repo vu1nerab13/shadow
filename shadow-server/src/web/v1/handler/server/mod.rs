@@ -1,4 +1,3 @@
-mod proxy;
 mod query;
 
 use crate::{network::ServerObj, web::error::Error};

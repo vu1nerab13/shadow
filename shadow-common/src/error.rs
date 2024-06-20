@@ -1,13 +1,16 @@
-use remoc::rtc::CallError;
+use remoc::{rch::ConnectError, rtc::CallError};
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
-use std::io;
+use std::{io, net};
 use thiserror::Error;
 
 #[derive(Error, Debug, Serialize, Deserialize)]
 pub enum ShadowError {
-    #[error("connect error, message: {0}")]
+    #[error("call error, message: {0}")]
     CallError(String),
+
+    #[error("connect error, message: {0}")]
+    ConnectError(String),
 
     #[error("system power error")]
     SystemPowerError,
@@ -63,6 +66,9 @@ pub enum ShadowError {
     #[error("param is invalid, message: {0}")]
     ParamInvalid(String),
 
+    #[error("can not parse address, message: {0}")]
+    AddrParseError(String),
+
     #[error("Requesting {0} error, message: {1}")]
     RequestError(String, String),
 }
@@ -70,6 +76,12 @@ pub enum ShadowError {
 impl From<CallError> for ShadowError {
     fn from(err: CallError) -> Self {
         Self::CallError(err.to_string())
+    }
+}
+
+impl From<ConnectError> for ShadowError {
+    fn from(err: ConnectError) -> Self {
+        Self::ConnectError(err.to_string())
     }
 }
 
@@ -93,5 +105,11 @@ impl From<reqwest::Error> for ShadowError {
                 .to_string(),
             err.to_string(),
         )
+    }
+}
+
+impl From<net::AddrParseError> for ShadowError {
+    fn from(err: net::AddrParseError) -> Self {
+        Self::AddrParseError(err.to_string())
     }
 }

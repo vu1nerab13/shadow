@@ -1,6 +1,8 @@
 use crate::misc;
+use chmux::ReceiverStream;
 use display_info::DisplayInfo;
 use local_encoding::{Encoder, Encoding};
+use log::info;
 use remoc::{codec, prelude::*};
 use shadow_common::{
     client::{self as sc, CallResult},
@@ -16,6 +18,7 @@ use tokio::{
     process::Command,
     sync::RwLock,
 };
+use tokio_util::io::StreamReader;
 
 #[allow(dead_code)]
 #[derive(Debug)]
@@ -239,5 +242,26 @@ impl sc::Client for ClientObj {
             .into_iter()
             .map(|i| sc::Display::from(i))
             .collect())
+    }
+
+    async fn proxy(
+        &self,
+        sender: rch::bin::Sender,
+        receiver: rch::bin::Receiver,
+    ) -> CallResult<()> {
+        tokio::spawn(async move {
+            unimplemented!();
+
+            let receiver = receiver.into_inner().await?;
+            let mut reader = StreamReader::new(ReceiverStream::new(receiver));
+            loop {
+                let qwq: u8 = reader.read_u8().await?;
+                info!("{}", qwq);
+            }
+
+            Ok::<(), anyhow::Error>(())
+        });
+
+        Ok(())
     }
 }

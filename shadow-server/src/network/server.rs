@@ -8,6 +8,7 @@ use shadow_common::{
     server as ss,
 };
 use std::{
+    collections::HashMap,
     net::{IpAddr, SocketAddr},
     sync::Arc,
 };
@@ -37,6 +38,7 @@ pub struct ServerObj {
     pub addr: SocketAddr,
     pub info: sc::SystemInfo,
     pub task: Option<JoinHandle<Result<(), ChMuxError<std::io::Error, std::io::Error>>>>,
+    pub proxies: HashMap<SocketAddr, JoinHandle<Result<(), ShadowError>>>,
 }
 
 impl ServerObj {
@@ -47,6 +49,7 @@ impl ServerObj {
             cfg: ServerCfg::default(),
             info: sc::SystemInfo::default(),
             task: None,
+            proxies: HashMap::new(),
         }
     }
 
@@ -153,6 +156,14 @@ impl ServerObj {
 
     pub async fn get_display_info(&self) -> CallResult<Vec<sc::Display>> {
         self.get_client().await?.get_display_info().await
+    }
+
+    pub async fn proxy(
+        &self,
+        sender: rch::bin::Sender,
+        receiver: rch::bin::Receiver,
+    ) -> CallResult<()> {
+        self.get_client().await?.proxy(sender, receiver).await
     }
 }
 

@@ -38,4 +38,7 @@ pub trait Client {
     async fn write_file(&self, file_path: String, content: Vec<u8>) -> CallResult<()>;
 
     async fn get_display_info(&self) -> CallResult<Vec<Display>>;
+
+    async fn proxy(&self, sender: rch::bin::Sender, receiver: rch::bin::Receiver)
+        -> CallResult<()>;
 }
