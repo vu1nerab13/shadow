@@ -47,15 +47,16 @@ impl Parameter for QueryParameter {
 async fn summarize_client(
     server_obj: Arc<RwLock<ServerObj>>,
 ) -> Result<Box<dyn Reply>, ShadowError> {
-    #![allow(non_snake_case)]
     #[derive(Serialize, Deserialize)]
     struct GetIpReply {
         status: String,
         message: Option<String>,
         country: Option<String>,
-        countryCode: Option<String>,
+        #[serde(rename(serialize = "country_code", deserialize = "countryCode"))]
+        country_code: Option<String>,
         region: Option<String>,
-        regionName: Option<String>,
+        #[serde(rename(serialize = "region_name", deserialize = "regionName"))]
+        region_name: Option<String>,
         city: Option<String>,
         zip: Option<String>,
         lat: Option<String>,
