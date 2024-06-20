@@ -1,3 +1,4 @@
+mod proxy;
 mod query;
 
 use crate::{network::ServerObj, web::error::Error};
@@ -66,12 +67,20 @@ pub fn setup_routes(
     let prefix = warp::path!("v1" / "server" / ..).and(any::any().map(move || server_objs.clone()));
 
     let query = prefix
+        .clone()
         .and(warp::path!("query"))
         .and(warp::path::end())
         .and(fq::query::<QueryParameter>())
         .and_then(run);
 
-    query.boxed()
+    let proxy = prefix
+        .clone()
+        .and(warp::path!("proxy"))
+        .and(warp::path::end())
+        .and(fq::query::<QueryParameter>())
+        .and_then(run);
+
+    query.or(proxy).boxed()
 }
 
 async fn run<T>(
