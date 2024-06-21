@@ -4,4 +4,8 @@ target/
 # macOS file
 .DS_Store
 
+# Idea files
 /.idea
+
+# Code counter
+/.VSCodeCounter
