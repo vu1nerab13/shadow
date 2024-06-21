@@ -1,10 +1,12 @@
 mod shim;
 mod types;
 
+use std::net::SocketAddr;
+
 use crate::error::ShadowError;
 use remoc::prelude::*;
-pub use types::*;
 
+pub use types::*;
 pub type CallResult<T> = Result<T, ShadowError>;
 
 #[rtc::remote]
@@ -39,6 +41,10 @@ pub trait Client {
 
     async fn get_display_info(&self) -> CallResult<Vec<Display>>;
 
-    async fn proxy(&self, sender: rch::bin::Sender, receiver: rch::bin::Receiver)
-        -> CallResult<()>;
+    async fn proxy(
+        &self,
+        target_addr: SocketAddr,
+        sender: rch::bin::Sender,
+        receiver: rch::bin::Receiver,
+    ) -> CallResult<()>;
 }

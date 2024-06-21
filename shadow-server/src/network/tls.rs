@@ -15,10 +15,8 @@ pub async fn load_keys(path: &Path) -> AppResult<PrivateKeyDer> {
     let mut content = Vec::new();
     File::open(path).await?.read_to_end(&mut content).await?;
 
-    let key = match rustls_pemfile::private_key(&mut Cursor::new(content))? {
-        Some(k) => k,
-        None => return Err(ShadowError::NoPrivateKey.into()),
-    };
+    let key =
+        rustls_pemfile::private_key(&mut Cursor::new(content))?.ok_or(ShadowError::NoPrivateKey)?;
 
     Ok(key.into())
 }

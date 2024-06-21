@@ -4,7 +4,7 @@ mod misc;
 pub mod server;
 
 pub use misc::get_version;
-pub use misc::SenderSink;
+pub use misc::transfer;
 
 use remoc::{codec, rtc};
 

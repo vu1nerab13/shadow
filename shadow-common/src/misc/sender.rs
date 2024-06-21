@@ -1,5 +1,5 @@
 use bytes::Bytes;
-use chmux::{SendError, Sender};
+use chmux::{ReceiverStream, SendError, Sender};
 use futures::{
     future::BoxFuture,
     ready,
@@ -9,7 +9,8 @@ use futures::{
 };
 use remoc::prelude::*;
 use std::{pin::Pin, sync::Arc};
-use tokio::sync::Mutex;
+use tokio::{io, join, net::TcpStream, sync::Mutex};
+use tokio_util::io::{SinkWriter, StreamReader};
 
 /// A sink sending byte data over a channel.
 pub struct SenderSink {
@@ -81,4 +82,25 @@ impl Sink<&[u8]> for SenderSink {
         Pin::into_inner(self).close();
         Poll::Ready(Ok(()))
     }
+}
+
+pub async fn transfer(sender: chmux::Sender, receiver: chmux::Receiver, stream: TcpStream) {
+    let (mut rx, mut tx) = io::split(stream);
+    let task1 = tokio::spawn(async move {
+        io::copy(&mut rx, &mut SinkWriter::new(SenderSink::new(sender))).await?;
+
+        Ok::<(), anyhow::Error>(())
+    });
+    let task2 = tokio::spawn(async move {
+        io::copy(
+            &mut StreamReader::new(ReceiverStream::new(receiver)),
+            &mut tx,
+        )
+        .await?;
+
+        Ok::<(), anyhow::Error>(())
+    });
+
+    // I don't want to use the return value
+    let _ = join!(task1, task2);
 }

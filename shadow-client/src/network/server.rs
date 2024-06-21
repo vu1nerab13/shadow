@@ -1,24 +1,22 @@
 use crate::misc;
-use chmux::ReceiverStream;
 use display_info::DisplayInfo;
 use local_encoding::{Encoder, Encoding};
-use log::info;
 use remoc::{codec, prelude::*};
 use shadow_common::{
     client::{self as sc, CallResult},
     error::ShadowError,
-    server as ss,
+    server as ss, transfer,
 };
 use shlex::Shlex;
-use std::{path::Path, sync::Arc};
+use std::{net::SocketAddr, path::Path, sync::Arc};
 use sysinfo::{Pid, System};
 use tokio::{
     fs,
     io::{AsyncReadExt, AsyncWriteExt},
+    net::TcpStream,
     process::Command,
     sync::RwLock,
 };
-use tokio_util::io::StreamReader;
 
 #[allow(dead_code)]
 #[derive(Debug)]
@@ -106,10 +104,7 @@ impl sc::Client for ClientObj {
             .processes()
             .iter()
             .map(|(pid, process)| {
-                let parent_pid = match process.parent() {
-                    Some(p) => Some(p.as_u32()),
-                    None => None,
-                };
+                let parent_pid = process.parent().map(|v| v.as_u32());
 
                 sc::Process {
                     pid: pid.as_u32(),
@@ -246,21 +241,17 @@ impl sc::Client for ClientObj {
 
     async fn proxy(
         &self,
+        target_addr: SocketAddr,
         sender: rch::bin::Sender,
         receiver: rch::bin::Receiver,
     ) -> CallResult<()> {
-        tokio::spawn(async move {
-            unimplemented!();
+        let stream = TcpStream::connect(target_addr).await?;
 
-            let receiver = receiver.into_inner().await?;
-            let mut reader = StreamReader::new(ReceiverStream::new(receiver));
-            loop {
-                let qwq: u8 = reader.read_u8().await?;
-                info!("{}", qwq);
-            }
-
-            Ok::<(), anyhow::Error>(())
-        });
+        tokio::spawn(transfer(
+            sender.into_inner().await?,
+            receiver.into_inner().await?,
+            stream,
+        ));
 
         Ok(())
     }

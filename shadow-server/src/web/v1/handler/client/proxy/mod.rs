@@ -51,9 +51,11 @@ impl Parameter for Proxy {
         op: Self::Operation,
         server_obj: Arc<RwLock<ServerObj>>,
     ) -> Result<Box<dyn Reply>, ShadowError> {
+        let listen_addr = format!("{}:{}", self.addr, self.port).parse()?;
+
         match op {
-            ProxyOperation::Socks5Open => socks5::open(server_obj, &self.addr, self.port).await,
-            ProxyOperation::Socks5Close => socks5::close(server_obj, &self.addr, self.port).await,
+            ProxyOperation::Socks5Open => socks5::open(server_obj, listen_addr).await,
+            ProxyOperation::Socks5Close => socks5::close(server_obj, listen_addr).await,
         }
     }
 }

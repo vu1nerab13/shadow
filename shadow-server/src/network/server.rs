@@ -160,10 +160,14 @@ impl ServerObj {
 
     pub async fn proxy(
         &self,
+        target_addr: SocketAddr,
         sender: rch::bin::Sender,
         receiver: rch::bin::Receiver,
     ) -> CallResult<()> {
-        self.get_client().await?.proxy(sender, receiver).await
+        self.get_client()
+            .await?
+            .proxy(target_addr, sender, receiver)
+            .await
     }
 }
 

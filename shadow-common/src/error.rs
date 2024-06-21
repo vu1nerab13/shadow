@@ -1,4 +1,4 @@
-use remoc::{rch::ConnectError, rtc::CallError};
+use remoc::{chmux::SendError, rch::ConnectError, rtc::CallError};
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use std::{io, net};
@@ -11,6 +11,9 @@ pub enum ShadowError {
 
     #[error("connect error, message: {0}")]
     ConnectError(String),
+
+    #[error("send error, message: {0}")]
+    SendError(String),
 
     #[error("system power error")]
     SystemPowerError,
@@ -82,6 +85,12 @@ impl From<CallError> for ShadowError {
 impl From<ConnectError> for ShadowError {
     fn from(err: ConnectError) -> Self {
         Self::ConnectError(err.to_string())
+    }
+}
+
+impl From<SendError> for ShadowError {
+    fn from(err: SendError) -> Self {
+        Self::SendError(err.to_string())
     }
 }
 
