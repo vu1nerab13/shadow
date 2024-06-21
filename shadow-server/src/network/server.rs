@@ -41,6 +41,18 @@ pub struct ServerObj {
     pub proxies: HashMap<SocketAddr, JoinHandle<()>>,
 }
 
+impl Drop for ServerObj {
+    fn drop(&mut self) {
+        if let Some(task) = &self.task {
+            task.abort()
+        }
+
+        for (_addr, task) in &self.proxies {
+            task.abort()
+        }
+    }
+}
+
 impl ServerObj {
     pub fn new(addr: SocketAddr) -> Self {
         Self {
