@@ -3,6 +3,13 @@
 [![Rust](https://github.com/vu1nerab13/shadow/actions/workflows/build.yml/badge.svg)](https://github.com/vu1nerab13/shadow/actions/workflows/build.yml)
 *A high performance rat server and client written in 100% safe rust*
 
+# Features
+1. Restful api interface
+2. Socks5 proxy
+3. High performance
+4. Stability
+5. etc.
+
 # Build (WSL & macOS)
 
 Install rust
