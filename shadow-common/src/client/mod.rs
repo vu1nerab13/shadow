@@ -1,13 +1,11 @@
 mod shim;
 mod types;
 
+use crate::CallResult;
+use remoc::prelude::*;
 use std::net::SocketAddr;
 
-use crate::error::ShadowError;
-use remoc::prelude::*;
-
 pub use types::*;
-pub type CallResult<T> = Result<T, ShadowError>;
 
 #[rtc::remote]
 pub trait Client {

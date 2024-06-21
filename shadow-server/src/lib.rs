@@ -20,4 +20,10 @@ pub struct AppArgs {
 
     #[arg(short, long, default_value_t = String::from("0.0.0.0:9000"))]
     pub web_addr: String,
+
+    #[arg(short, long, default_value_t = String::from("certs/shadow_ca.crt"))]
+    pub cert_path: String,
+
+    #[arg(short, long, default_value_t = String::from("certs/rsa_4096_pri.key"))]
+    pub pri_key_path: String,
 }

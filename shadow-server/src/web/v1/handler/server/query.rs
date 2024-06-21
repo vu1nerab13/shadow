@@ -2,7 +2,7 @@ use super::Parameter;
 use crate::network::ServerObj;
 use anyhow::Result as AppResult;
 use serde::{Deserialize, Serialize};
-use shadow_common::error::ShadowError;
+use shadow_common::CallResult;
 use std::{collections::HashMap, net::SocketAddr, str::FromStr, sync::Arc};
 use strum_macros::EnumString;
 use tokio::sync::RwLock;
@@ -37,7 +37,7 @@ impl Parameter for QueryParameter {
         &self,
         op: Self::Operation,
         server_objs: Arc<RwLock<HashMap<SocketAddr, Arc<RwLock<ServerObj>>>>>,
-    ) -> Result<Box<dyn Reply>, ShadowError> {
+    ) -> CallResult<Box<dyn Reply>> {
         match op {
             QueryOperation::Clients => query_clients(server_objs).await,
         }
@@ -46,7 +46,7 @@ impl Parameter for QueryParameter {
 
 async fn query_clients(
     server_objs: Arc<RwLock<HashMap<SocketAddr, Arc<RwLock<ServerObj>>>>>,
-) -> Result<Box<dyn Reply>, ShadowError> {
+) -> CallResult<Box<dyn Reply>> {
     let server_objs = server_objs.read().await;
 
     Ok(Box::new(reply::with_status(

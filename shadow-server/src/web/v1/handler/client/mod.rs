@@ -15,7 +15,7 @@ use power::Power as PowerParameter;
 use process::Process as ProcessParameter;
 use proxy::Proxy as ProxyParameter;
 use query::Query as QueryParameter;
-use shadow_common::error::ShadowError;
+use shadow_common::{error::ShadowError, CallResult};
 use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 use tokio::sync::RwLock;
 use warp::{
@@ -37,7 +37,7 @@ trait Parameter {
         &self,
         op: Self::Operation,
         server_obj: Arc<RwLock<ServerObj>>,
-    ) -> Result<Box<dyn Reply>, ShadowError>;
+    ) -> CallResult<Box<dyn Reply>>;
 
     fn summarize() -> String;
 
@@ -169,7 +169,7 @@ where
     param.run(addr, server_objs).await
 }
 
-fn success() -> Result<Box<dyn Reply>, ShadowError> {
+fn success() -> CallResult<Box<dyn Reply>> {
     Ok(Box::new(reply::with_status(
         reply::json(&Error {
             message: "perform completed successfully".into(),
@@ -179,7 +179,7 @@ fn success() -> Result<Box<dyn Reply>, ShadowError> {
     )))
 }
 
-fn require<T, S: AsRef<str>>(opt: Option<T>, description: S) -> Result<T, ShadowError>
+fn require<T, S: AsRef<str>>(opt: Option<T>, description: S) -> CallResult<T>
 where
     T: Clone,
 {

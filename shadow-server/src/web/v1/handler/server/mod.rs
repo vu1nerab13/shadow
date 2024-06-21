@@ -3,7 +3,7 @@ mod query;
 use crate::{network::ServerObj, web::error::Error};
 use anyhow::Result as AppResult;
 use query::QueryParameter;
-use shadow_common::error::ShadowError;
+use shadow_common::{error::ShadowError, CallResult};
 use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 use tokio::sync::RwLock;
 use warp::{
@@ -25,7 +25,7 @@ trait Parameter {
         &self,
         op: Self::Operation,
         server_objs: Arc<RwLock<HashMap<SocketAddr, Arc<RwLock<ServerObj>>>>>,
-    ) -> Result<Box<dyn Reply>, ShadowError>;
+    ) -> CallResult<Box<dyn Reply>>;
 
     fn summarize() -> String;
 

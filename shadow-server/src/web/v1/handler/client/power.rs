@@ -2,7 +2,7 @@ use super::{super::super::error::Error, Parameter};
 use crate::network::ServerObj;
 use anyhow::Result as AppResult;
 use serde::{Deserialize, Serialize};
-use shadow_common::{client::SystemPowerAction, error::ShadowError};
+use shadow_common::{client::SystemPowerAction, error::ShadowError, CallResult};
 use std::{str::FromStr, sync::Arc};
 use tokio::sync::RwLock;
 use warp::{
@@ -30,7 +30,7 @@ impl Parameter for Power {
         &self,
         op: Self::Operation,
         server_obj: Arc<RwLock<ServerObj>>,
-    ) -> Result<Box<dyn Reply>, ShadowError> {
+    ) -> CallResult<Box<dyn Reply>> {
         let (message, error, code) = match server_obj.read().await.system_power(op).await {
             Ok(_) => (
                 "power action successfully completed".into(),

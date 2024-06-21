@@ -2,7 +2,7 @@ use super::Parameter;
 use crate::network::ServerObj;
 use anyhow::Result as AppResult;
 use serde::{Deserialize, Serialize};
-use shadow_common::error::ShadowError;
+use shadow_common::CallResult;
 use std::{str::FromStr, sync::Arc};
 use strum_macros::EnumString;
 use tokio::sync::RwLock;
@@ -37,14 +37,14 @@ impl Parameter for App {
         &self,
         op: Self::Operation,
         server_obj: Arc<RwLock<ServerObj>>,
-    ) -> Result<Box<dyn Reply>, ShadowError> {
+    ) -> CallResult<Box<dyn Reply>> {
         match op {
             AppOperation::Enumerate => query_apps(server_obj).await,
         }
     }
 }
 
-async fn query_apps(server_obj: Arc<RwLock<ServerObj>>) -> Result<Box<dyn Reply>, ShadowError> {
+async fn query_apps(server_obj: Arc<RwLock<ServerObj>>) -> CallResult<Box<dyn Reply>> {
     let apps = server_obj.read().await.get_installed_apps().await?;
 
     Ok(Box::new(reply::with_status(

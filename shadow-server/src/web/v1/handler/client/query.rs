@@ -2,7 +2,7 @@ use super::Parameter;
 use crate::network::ServerObj;
 use anyhow::Result as AppResult;
 use serde::{Deserialize, Serialize};
-use shadow_common::{client as sc, error::ShadowError};
+use shadow_common::{client as sc, CallResult};
 use std::{str::FromStr, sync::Arc};
 use strum_macros::EnumString;
 use tokio::sync::RwLock;
@@ -37,16 +37,14 @@ impl Parameter for Query {
         &self,
         op: Self::Operation,
         server_obj: Arc<RwLock<ServerObj>>,
-    ) -> Result<Box<dyn Reply>, ShadowError> {
+    ) -> CallResult<Box<dyn Reply>> {
         match op {
             QueryOperation::Summary => summarize_client(server_obj).await,
         }
     }
 }
 
-async fn summarize_client(
-    server_obj: Arc<RwLock<ServerObj>>,
-) -> Result<Box<dyn Reply>, ShadowError> {
+async fn summarize_client(server_obj: Arc<RwLock<ServerObj>>) -> CallResult<Box<dyn Reply>> {
     #[derive(Serialize, Deserialize)]
     struct GetIpReply {
         status: String,

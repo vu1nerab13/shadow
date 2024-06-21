@@ -1,10 +1,14 @@
 # Custom Dictionary Words
+Addrs
 buildtools
 chmux
 choco
 flexi
 Libcrypto
+mitsuha
+miyamizu
 MSVC
+nmethods
 ocsp
 pemfile
 proto

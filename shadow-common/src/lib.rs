@@ -3,12 +3,13 @@ pub mod error;
 mod misc;
 pub mod server;
 
+use error::ShadowError;
+use remoc::codec;
+
 pub use misc::get_version;
 pub use misc::transfer;
 
-use remoc::{codec, rtc};
-
-pub type RtcResult<T> = Result<T, rtc::CallError>;
+pub type CallResult<T> = Result<T, ShadowError>;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub enum ObjectType {

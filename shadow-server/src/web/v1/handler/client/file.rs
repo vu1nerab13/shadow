@@ -2,7 +2,7 @@ use super::Parameter;
 use crate::network::ServerObj;
 use anyhow::Result as AppResult;
 use serde::{Deserialize, Serialize};
-use shadow_common::error::ShadowError;
+use shadow_common::CallResult;
 use std::{str::FromStr, sync::Arc};
 use strum_macros::EnumString;
 use tokio::sync::RwLock;
@@ -54,7 +54,7 @@ impl Parameter for File {
         &self,
         op: Self::Operation,
         server_obj: Arc<RwLock<ServerObj>>,
-    ) -> Result<Box<dyn Reply>, ShadowError> {
+    ) -> CallResult<Box<dyn Reply>> {
         match op {
             FileOperation::Enumerate => enumerate_directory(server_obj, &self.path).await,
             FileOperation::Read => read_file(server_obj, &self.path).await,
@@ -70,7 +70,7 @@ impl Parameter for File {
 async fn enumerate_directory(
     server_obj: Arc<RwLock<ServerObj>>,
     path: &String,
-) -> Result<Box<dyn Reply>, ShadowError> {
+) -> CallResult<Box<dyn Reply>> {
     let files = server_obj.read().await.get_file_list(path).await?;
 
     Ok(Box::new(reply::with_status(
@@ -82,7 +82,7 @@ async fn enumerate_directory(
 async fn read_file(
     server_obj: Arc<RwLock<ServerObj>>,
     path: &String,
-) -> Result<Box<dyn Reply>, ShadowError> {
+) -> CallResult<Box<dyn Reply>> {
     let files = server_obj.read().await.get_file_content(path).await?;
 
     Ok(Box::new(reply::with_status(files, StatusCode::OK)))
@@ -92,7 +92,7 @@ async fn create(
     server_obj: Arc<RwLock<ServerObj>>,
     path: &String,
     dir: &Option<bool>,
-) -> Result<Box<dyn Reply>, ShadowError> {
+) -> CallResult<Box<dyn Reply>> {
     let dir = dir.unwrap_or(false);
 
     match dir {
@@ -106,7 +106,7 @@ async fn create(
 async fn open_file(
     server_obj: Arc<RwLock<ServerObj>>,
     path: &String,
-) -> Result<Box<dyn Reply>, ShadowError> {
+) -> CallResult<Box<dyn Reply>> {
     let output = server_obj.read().await.open_file(path).await?;
 
     Ok(Box::new(reply::with_status(
@@ -119,7 +119,7 @@ async fn write_file(
     server_obj: Arc<RwLock<ServerObj>>,
     path: &String,
     content: &Option<Vec<u8>>,
-) -> Result<Box<dyn Reply>, ShadowError> {
+) -> CallResult<Box<dyn Reply>> {
     let content = super::require(content.clone(), "file content")?;
 
     server_obj.read().await.write_file(path, content).await?;
@@ -130,7 +130,7 @@ async fn write_file(
 async fn delete_file(
     server_obj: Arc<RwLock<ServerObj>>,
     path: &String,
-) -> Result<Box<dyn Reply>, ShadowError> {
+) -> CallResult<Box<dyn Reply>> {
     server_obj.read().await.delete_file(path).await?;
 
     super::success()
@@ -139,7 +139,7 @@ async fn delete_file(
 async fn delete_dir_recursive(
     server_obj: Arc<RwLock<ServerObj>>,
     path: &String,
-) -> Result<Box<dyn Reply>, ShadowError> {
+) -> CallResult<Box<dyn Reply>> {
     server_obj.read().await.delete_dir_recursive(path).await?;
 
     super::success()

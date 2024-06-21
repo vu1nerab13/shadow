@@ -74,6 +74,12 @@ pub enum ShadowError {
 
     #[error("Requesting {0} error, message: {1}")]
     RequestError(String, String),
+
+    #[error("invalid user or password")]
+    PermissionDenied,
+
+    #[error("failed to lookup dns of domain: {0}")]
+    DnsLookupError(String),
 }
 
 impl From<CallError> for ShadowError {

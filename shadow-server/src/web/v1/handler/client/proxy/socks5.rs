@@ -1,90 +1,63 @@
-use crate::network::ServerObj;
-use log::warn;
-use remoc::rch;
-use shadow_common::{error::ShadowError, transfer};
-use std::{net::SocketAddr, sync::Arc};
-use tokio::{net::TcpListener, sync::RwLock};
-use warp::reply::Reply;
+use shadow_common::{error::ShadowError, CallResult};
+use socks5_impl::{
+    protocol::{
+        handshake, Address, AsyncStreamOperation, AuthMethod, Command, Reply, Request, Response,
+    },
+    server::{auth, AuthExecutor},
+};
+use std::net::{SocketAddr, ToSocketAddrs};
+use tokio::net::TcpStream;
 
-pub async fn open(
-    server_obj: Arc<RwLock<ServerObj>>,
-    listen_addr: SocketAddr,
-) -> Result<Box<dyn Reply>, ShadowError> {
-    if let Some(_task) = server_obj.read().await.proxies.get(&listen_addr) {
-        return super::super::success();
-    }
+pub async fn parse(
+    stream: &mut TcpStream,
+    user: String,
+    password: String,
+) -> CallResult<SocketAddr> {
+    let request = handshake::Request::retrieve_from_async_stream(stream).await?;
+    if request.evaluate_method(AuthMethod::UserPass) {
+        handshake::Response::new(AuthMethod::UserPass)
+            .write_to_async_stream(stream)
+            .await?;
 
-    let listener = TcpListener::bind(listen_addr).await?;
-    let task = tokio::spawn(accept_connection(server_obj.clone(), listener));
-
-    server_obj.write().await.proxies.insert(listen_addr, task);
-
-    super::super::success()
-}
-
-async fn accept_connection(
-    server_obj: Arc<RwLock<ServerObj>>,
-    listener: TcpListener,
-) -> Result<(), ShadowError> {
-    loop {
-        let (stream, _addr) = match listener.accept().await {
-            Ok(r) => r,
-            Err(e) => {
-                warn!(
-                    "{}: error in accepting incoming proxy request, message: {}",
-                    server_obj.read().await.get_ip(),
-                    e.to_string()
-                );
-
-                continue;
-            }
-        };
-
-        let (server_tx, client_rx) = rch::bin::channel();
-        let (client_tx, server_rx) = rch::bin::channel();
-
-        // Send the channels to client
-        match server_obj
-            .read()
-            .await
-            .proxy("127.0.0.1:8001".parse()?, client_tx, client_rx)
-            .await
+        if auth::UserKeyAuth::new(&user, &password)
+            .execute(stream)
+            .await?
+            == false
         {
-            Ok(_) => {}
-            Err(e) => {
-                warn!(
-                    "{}: error in sending channels to client, message: {}",
-                    server_obj.read().await.get_ip(),
-                    e.to_string()
-                );
+            return Err(ShadowError::AccessDenied);
+        };
+    } else {
+        handshake::Response::new(AuthMethod::NoAcceptableMethods)
+            .write_to_async_stream(stream)
+            .await?;
 
-                continue;
-            }
-        }
-
-        tokio::spawn(transfer(
-            server_tx.into_inner().await?,
-            server_rx.into_inner().await?,
-            stream,
+        return Err(ShadowError::ParamInvalid(
+            "no available handshake method provided by client".into(),
         ));
-    }
-}
+    };
 
-pub async fn close(
-    server_obj: Arc<RwLock<ServerObj>>,
-    listen_addr: SocketAddr,
-) -> Result<Box<dyn Reply>, ShadowError> {
-    let mut server_obj = server_obj.write().await;
+    let request = Request::retrieve_from_async_stream(stream).await?;
 
-    server_obj
-        .proxies
-        .get(&listen_addr)
-        .ok_or(ShadowError::ParamInvalid(
-            "no existing proxy running".into(),
-        ))?
-        .abort();
+    let ret = match request.command {
+        Command::Bind | Command::UdpAssociate => {
+            Response::new(Reply::CommandNotSupported, Address::unspecified())
+                .write_to_async_stream(stream)
+                .await?;
 
-    server_obj.proxies.remove(&listen_addr);
+            Err(ShadowError::Unsupported)
+        }
+        Command::Connect => match request.address {
+            Address::DomainAddress(domain, port) => Ok((domain.clone(), port)
+                .to_socket_addrs()?
+                .next()
+                .ok_or(ShadowError::DnsLookupError(domain))?),
+            Address::SocketAddress(addr) => Ok(addr),
+        },
+    };
 
-    super::super::success()
+    Response::new(Reply::Succeeded, Address::unspecified())
+        .write_to_async_stream(stream)
+        .await?;
+
+    ret
 }

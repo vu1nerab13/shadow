@@ -1,12 +1,12 @@
 use crate::network::{server::ServerObj, tls};
 use anyhow::Result as AppResult;
-use log::info;
+use log::{debug, info};
 use remoc::{chmux::ChMuxError, codec, prelude::*, rch};
 use shadow_common::{
     client::{self as sc, Client},
     server as ss, ObjectType,
 };
-use std::{collections::HashMap, net::SocketAddr, path::Path, sync::Arc};
+use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 use tokio::{
     io::{self},
     net::{TcpListener, TcpStream},
@@ -17,11 +17,17 @@ use tokio_rustls::{rustls, server::TlsStream, TlsAcceptor};
 
 pub struct Config {
     addr: SocketAddr,
+    cert_path: String,
+    pri_key_path: String,
 }
 
 impl Config {
-    pub fn new(addr: SocketAddr) -> Self {
-        Self { addr }
+    pub fn new(addr: SocketAddr, cert_path: String, pri_key_path: String) -> Self {
+        Self {
+            addr,
+            cert_path,
+            pri_key_path,
+        }
     }
 }
 
@@ -102,8 +108,13 @@ pub async fn run(
     cfg: Config,
     server_objs: Arc<RwLock<HashMap<SocketAddr, Arc<RwLock<ServerObj>>>>>,
 ) -> AppResult<()> {
-    let certs = tls::load_certs(Path::new("certs/shadow_ca.crt")).await?;
-    let key = tls::load_keys(Path::new("certs/rsa_4096_pri.key")).await?;
+    debug!(
+        "using certs in {}, private key: {}",
+        cfg.cert_path, cfg.pri_key_path
+    );
+
+    let certs = tls::load_certs(cfg.cert_path).await?;
+    let key = tls::load_keys(cfg.pri_key_path).await?;
     let tls_config = rustls::ServerConfig::builder()
         .with_no_client_auth()
         .with_single_cert(certs, key)?;

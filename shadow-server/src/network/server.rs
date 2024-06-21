@@ -3,9 +3,9 @@ use log::trace;
 use remoc::{chmux::ChMuxError, codec, prelude::*};
 use serde::{Deserialize, Serialize};
 use shadow_common::{
-    client::{self as sc, CallResult, Client},
+    client::{self as sc, Client},
     error::ShadowError,
-    server as ss,
+    server as ss, CallResult,
 };
 use std::{
     collections::HashMap,
@@ -38,7 +38,7 @@ pub struct ServerObj {
     pub addr: SocketAddr,
     pub info: sc::SystemInfo,
     pub task: Option<JoinHandle<Result<(), ChMuxError<std::io::Error, std::io::Error>>>>,
-    pub proxies: HashMap<SocketAddr, JoinHandle<Result<(), ShadowError>>>,
+    pub proxies: HashMap<SocketAddr, JoinHandle<()>>,
 }
 
 impl ServerObj {

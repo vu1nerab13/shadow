@@ -1,4 +1,4 @@
-use crate::error::ShadowError;
+use crate::CallResult;
 use remoc::prelude::*;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -8,5 +8,5 @@ pub struct Handshake {
 
 #[rtc::remote]
 pub trait Server {
-    async fn handshake(&self) -> Result<Handshake, ShadowError>;
+    async fn handshake(&self) -> CallResult<Handshake>;
 }

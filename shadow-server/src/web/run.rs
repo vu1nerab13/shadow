@@ -1,6 +1,6 @@
 use crate::network::ServerObj;
 use crate::web::v1;
-use anyhow::Result;
+use anyhow::Result as AppResult;
 use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 use tokio::sync::RwLock;
 use warp::{path, Filter};
@@ -20,7 +20,7 @@ impl Config {
 pub async fn run(
     cfg: Config,
     server_objs: Arc<RwLock<HashMap<SocketAddr, Arc<RwLock<ServerObj>>>>>,
-) -> Result<()> {
+) -> AppResult<()> {
     // Root page
     let root = path::end().map(|| "Welcome to shadow server!");
 

@@ -15,6 +15,7 @@
 use anyhow::Result as AppResult;
 use clap::Parser;
 use flexi_logger::Logger;
+use log::debug;
 use shadow_server::{network, web, AppArgs};
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::RwLock;
@@ -29,10 +30,16 @@ async fn main() -> AppResult<()> {
     #[cfg(debug_assertions)]
     Logger::try_with_str(args.verbose)?.start()?;
 
+    debug!(
+        "server address: {}, web address: {}",
+        args.server_addr, args.web_addr
+    );
+
     // A instance representing all clients connected to the server
     let server_objs = Arc::new(RwLock::new(HashMap::new()));
     // Server config
-    let server_cfg = network::Config::new(args.server_addr.parse()?);
+    let server_cfg =
+        network::Config::new(args.server_addr.parse()?, args.cert_path, args.pri_key_path);
     // Web interface config
     let web_cfg = web::Config::new(args.web_addr.parse()?);
 

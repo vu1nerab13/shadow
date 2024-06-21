@@ -2,7 +2,7 @@ use super::Parameter;
 use crate::network::ServerObj;
 use anyhow::Result as AppResult;
 use serde::{Deserialize, Serialize};
-use shadow_common::error::ShadowError;
+use shadow_common::CallResult;
 use std::{str::FromStr, sync::Arc};
 use strum_macros::EnumString;
 use tokio::sync::RwLock;
@@ -40,7 +40,7 @@ impl Parameter for Process {
         &self,
         op: Self::Operation,
         server_obj: Arc<RwLock<ServerObj>>,
-    ) -> Result<Box<dyn Reply>, ShadowError> {
+    ) -> CallResult<Box<dyn Reply>> {
         match op {
             ProcessOperation::Enumerate => query_processes(server_obj).await,
             ProcessOperation::Kill => kill_process(server_obj, &self.pid).await,
@@ -48,9 +48,7 @@ impl Parameter for Process {
     }
 }
 
-async fn query_processes(
-    server_obj: Arc<RwLock<ServerObj>>,
-) -> Result<Box<dyn Reply>, ShadowError> {
+async fn query_processes(server_obj: Arc<RwLock<ServerObj>>) -> CallResult<Box<dyn Reply>> {
     let processes = server_obj.read().await.get_processes().await?;
 
     Ok(Box::new(reply::with_status(
@@ -62,7 +60,7 @@ async fn query_processes(
 async fn kill_process(
     server_obj: Arc<RwLock<ServerObj>>,
     pid: &Option<u32>,
-) -> Result<Box<dyn Reply>, ShadowError> {
+) -> CallResult<Box<dyn Reply>> {
     let pid = super::require(pid.clone(), "process id")?;
 
     server_obj.read().await.kill_process(pid).await?;

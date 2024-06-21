@@ -2,11 +2,7 @@ use crate::misc;
 use display_info::DisplayInfo;
 use local_encoding::{Encoder, Encoding};
 use remoc::{codec, prelude::*};
-use shadow_common::{
-    client::{self as sc, CallResult},
-    error::ShadowError,
-    server as ss, transfer,
-};
+use shadow_common::{client as sc, error::ShadowError, server as ss, transfer, CallResult};
 use shlex::Shlex;
 use std::{net::SocketAddr, path::Path, sync::Arc};
 use sysinfo::{Pid, System};
