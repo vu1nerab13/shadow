@@ -1,5 +1,6 @@
+use crate::{error::ShadowError, CallResult};
 use bytes::Bytes;
-use chmux::{ReceiverStream, SendError, Sender};
+use chmux::{ReceiverStream, Sender};
 use futures::{
     future::BoxFuture,
     ready,
@@ -15,7 +16,7 @@ use tokio_util::io::{SinkWriter, StreamReader};
 /// A sink sending byte data over a channel.
 pub struct SenderSink {
     sender: Option<Arc<Mutex<Sender>>>,
-    send_fut: Option<BoxFuture<'static, Result<(), SendError>>>,
+    send_fut: Option<BoxFuture<'static, CallResult<()>>>,
 }
 
 impl SenderSink {
@@ -26,14 +27,16 @@ impl SenderSink {
         }
     }
 
-    pub async fn send(sender: Arc<Mutex<Sender>>, data: Bytes) -> Result<(), SendError> {
+    pub async fn send(sender: Arc<Mutex<Sender>>, data: Bytes) -> CallResult<()> {
         let mut sender = sender.lock().await;
-        sender.send(data).await
+        Ok(sender.send(data).await?)
     }
 
-    pub fn start_send(&mut self, data: Bytes) -> Result<(), SendError> {
+    pub fn start_send(&mut self, data: Bytes) -> CallResult<()> {
         if self.send_fut.is_some() {
-            panic!("sink is not ready for sending");
+            return Err(ShadowError::ParamInvalid(
+                "sink is not ready for sending".into(),
+            ));
         }
 
         match self.sender.clone() {
@@ -41,11 +44,15 @@ impl SenderSink {
                 self.send_fut = Some(Self::send(sender, data).boxed());
                 Ok(())
             }
-            None => panic!("start_send after sink has been closed"),
+            None => {
+                return Err(ShadowError::ParamInvalid(
+                    "start_send after sink has been closed".into(),
+                ))
+            }
         }
     }
 
-    pub fn poll_send(&mut self, cx: &mut Context) -> Poll<Result<(), SendError>> {
+    pub fn poll_send(&mut self, cx: &mut Context) -> Poll<CallResult<()>> {
         match &mut self.send_fut {
             Some(fut) => {
                 let res = ready!(fut.as_mut().poll(cx));
@@ -62,7 +69,7 @@ impl SenderSink {
 }
 
 impl Sink<&[u8]> for SenderSink {
-    type Error = SendError;
+    type Error = ShadowError;
 
     fn poll_ready(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Result<(), Self::Error>> {
         Pin::into_inner(self).poll_send(cx)

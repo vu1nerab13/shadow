@@ -37,11 +37,7 @@ impl Parameter for Power {
                 ShadowError::Success,
                 StatusCode::OK,
             ),
-            Err(e) => (
-                e.to_string(),
-                ShadowError::UnknownError,
-                StatusCode::BAD_REQUEST,
-            ),
+            Err(e) => (e.to_string(), e, StatusCode::BAD_REQUEST),
         };
         let error = error.to_string();
 

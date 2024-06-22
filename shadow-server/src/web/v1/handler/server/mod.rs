@@ -2,7 +2,7 @@ mod query;
 
 use crate::{network::ServerObj, web::error::Error};
 use anyhow::Result as AppResult;
-use query::QueryParameter;
+use query::Query as QueryParameter;
 use shadow_common::{error::ShadowError, CallResult};
 use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 use tokio::sync::RwLock;
@@ -38,7 +38,7 @@ trait Parameter {
             Err(e) => {
                 return Ok(Box::new(reply::with_status(
                     reply::json(&Error {
-                        error: ShadowError::NoOp.to_string(),
+                        error: ShadowError::NoOperationProvided.to_string(),
                         message: e.to_string(),
                     }),
                     StatusCode::BAD_REQUEST,

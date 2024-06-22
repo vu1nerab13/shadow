@@ -49,7 +49,7 @@ pub enum ShadowError {
     Success,
 
     #[error("no operation provided")]
-    NoOp,
+    NoOperationProvided,
 
     #[error("address is invalid")]
     AddressInvalid,
@@ -126,5 +126,12 @@ impl From<reqwest::Error> for ShadowError {
 impl From<net::AddrParseError> for ShadowError {
     fn from(err: net::AddrParseError) -> Self {
         Self::AddrParseError(err.to_string())
+    }
+}
+
+impl From<ShadowError> for io::Error {
+    fn from(err: ShadowError) -> Self {
+        use io::ErrorKind;
+        Self::new(ErrorKind::Other, err.to_string())
     }
 }

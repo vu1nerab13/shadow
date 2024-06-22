@@ -19,7 +19,7 @@ pub enum ProxyOperation {
     Close,
 }
 
-#[derive(EnumString, Deserialize, Serialize, Display)]
+#[derive(EnumString, Deserialize, Serialize, Display, Clone, Copy)]
 pub enum ProxyType {
     #[strum(ascii_case_insensitive)]
     Socks5,

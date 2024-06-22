@@ -51,7 +51,7 @@ trait Parameter {
             Err(e) => {
                 return Ok(Box::new(reply::with_status(
                     reply::json(&Error {
-                        error: ShadowError::NoOp.to_string(),
+                        error: ShadowError::NoOperationProvided.to_string(),
                         message: e.to_string(),
                     }),
                     StatusCode::BAD_REQUEST,
