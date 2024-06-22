@@ -1,7 +1,12 @@
 use crate::misc;
 use display_info::DisplayInfo;
 use local_encoding::{Encoder, Encoding};
-use remoc::{codec, prelude::*};
+use log::debug;
+use rch::oneshot::{self, Receiver};
+use remoc::{
+    codec::{self, Bincode},
+    prelude::*,
+};
 use shadow_common::{client as sc, error::ShadowError, server as ss, transfer, CallResult};
 use shlex::Shlex;
 use std::{net::SocketAddr, path::Path, sync::Arc};
@@ -240,15 +245,24 @@ impl sc::Client for ClientObj {
         target_addr: SocketAddr,
         sender: rch::bin::Sender,
         receiver: rch::bin::Receiver,
-    ) -> CallResult<()> {
+    ) -> CallResult<Receiver<bool, Bincode>> {
         let stream = TcpStream::connect(target_addr).await?;
+        let (signal_tx, signal_rx) = oneshot::channel();
 
-        tokio::spawn(transfer(
-            sender.into_inner().await?,
-            receiver.into_inner().await?,
-            stream,
-        ));
+        tokio::spawn(async move {
+            transfer(
+                sender.into_inner().await?,
+                receiver.into_inner().await?,
+                stream,
+            )
+            .await;
 
-        Ok(())
+            signal_tx.send(true)?;
+            debug!("outbound {} proxy exited", target_addr);
+
+            Ok::<(), anyhow::Error>(())
+        });
+
+        Ok(signal_rx)
     }
 }

@@ -2,7 +2,8 @@ mod shim;
 mod types;
 
 use crate::CallResult;
-use remoc::prelude::*;
+use rch::oneshot::Receiver;
+use remoc::{codec::Bincode, prelude::*};
 use std::net::SocketAddr;
 
 pub use types::*;
@@ -44,5 +45,5 @@ pub trait Client {
         target_addr: SocketAddr,
         sender: rch::bin::Sender,
         receiver: rch::bin::Receiver,
-    ) -> CallResult<()>;
+    ) -> CallResult<Receiver<bool, Bincode>>;
 }

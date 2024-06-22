@@ -1,6 +1,7 @@
 use super::Parameter;
 use crate::network::ServerObj;
 use anyhow::Result as AppResult;
+use log::trace;
 use serde::{Deserialize, Serialize};
 use shadow_common::CallResult;
 use std::{collections::HashMap, net::SocketAddr, str::FromStr, sync::Arc};
@@ -47,6 +48,8 @@ impl Parameter for Query {
 async fn query_clients(
     server_objs: Arc<RwLock<HashMap<SocketAddr, Arc<RwLock<ServerObj>>>>>,
 ) -> CallResult<Box<dyn Reply>> {
+    trace!("querying client list");
+
     let server_objs = server_objs.read().await;
 
     Ok(Box::new(reply::with_status(

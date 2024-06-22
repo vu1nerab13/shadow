@@ -1,6 +1,10 @@
 use crate::misc;
-use log::trace;
-use remoc::{chmux::ChMuxError, codec, prelude::*};
+use log::{trace, warn};
+use rch::oneshot::Receiver;
+use remoc::{
+    codec::{self, Bincode},
+    prelude::*,
+};
 use serde::{Deserialize, Serialize};
 use shadow_common::{
     client::{self as sc, Client},
@@ -12,10 +16,7 @@ use std::{
     net::{IpAddr, SocketAddr},
     sync::Arc,
 };
-use tokio::{
-    sync::{RwLock, RwLockReadGuard},
-    task::JoinHandle,
-};
+use tokio::sync::{oneshot, RwLock, RwLockReadGuard};
 
 #[allow(dead_code)]
 #[derive(Debug, Serialize, Deserialize)]
@@ -34,23 +35,11 @@ impl Default for ServerCfg {
 #[derive(Debug)]
 pub struct ServerObj {
     cfg: ServerCfg,
-    pub client: Option<Arc<RwLock<sc::ClientClient<codec::Bincode>>>>,
+    pub client: Option<Arc<RwLock<sc::ClientClient<Bincode>>>>,
     pub addr: SocketAddr,
     pub info: sc::SystemInfo,
-    pub task: Option<JoinHandle<Result<(), ChMuxError<std::io::Error, std::io::Error>>>>,
-    pub proxies: HashMap<SocketAddr, JoinHandle<()>>,
-}
-
-impl Drop for ServerObj {
-    fn drop(&mut self) {
-        if let Some(task) = &self.task {
-            task.abort()
-        }
-
-        for (_addr, task) in &self.proxies {
-            task.abort()
-        }
-    }
+    pub signal_tx: Option<oneshot::Sender<bool>>,
+    pub proxies: HashMap<SocketAddr, Option<oneshot::Sender<bool>>>,
 }
 
 impl ServerObj {
@@ -60,7 +49,7 @@ impl ServerObj {
             client: None,
             cfg: ServerCfg::default(),
             info: sc::SystemInfo::default(),
-            task: None,
+            signal_tx: None,
             proxies: HashMap::new(),
         }
     }
@@ -77,35 +66,54 @@ impl ServerObj {
             .await)
     }
 
+    #[inline]
     pub fn get_ip(&self) -> IpAddr {
         self.addr.ip()
     }
 
+    #[inline]
     pub fn summary(&self) -> sc::SystemInfo {
         self.info.clone()
     }
 
-    pub fn disconnect(&self) -> CallResult<()> {
-        self.task
-            .as_ref()
+    #[inline]
+    pub fn shutdown_tasks(&mut self) {
+        for (_, tx) in &mut self.proxies {
+            if let Some(tx) = tx.take() {
+                let _ = tx
+                    .send(true)
+                    .map_err(|_| warn!("{}", ShadowError::StopFailed.to_string()));
+            }
+        }
+    }
+
+    #[inline]
+    pub fn disconnect(&mut self) -> CallResult<()> {
+        self.signal_tx
+            .take()
             .ok_or(ShadowError::DisconnectError)?
-            .abort();
+            .send(true)
+            .map_err(|_| ShadowError::StopFailed)?;
 
         Ok(())
     }
 
+    #[inline]
     pub async fn system_power(&self, action: sc::SystemPowerAction) -> CallResult<()> {
         self.get_client().await?.system_power(action).await
     }
 
+    #[inline]
     pub async fn get_installed_apps(&self) -> CallResult<Vec<sc::App>> {
         self.get_client().await?.get_installed_apps().await
     }
 
+    #[inline]
     pub async fn get_processes(&self) -> CallResult<Vec<sc::Process>> {
         self.get_client().await?.get_processes().await
     }
 
+    #[inline]
     pub async fn get_file_list<S: AsRef<str>>(&self, dir: S) -> CallResult<Vec<sc::File>> {
         self.get_client()
             .await?
@@ -113,6 +121,7 @@ impl ServerObj {
             .await
     }
 
+    #[inline]
     pub async fn get_file_content<S: AsRef<str>>(&self, file: S) -> CallResult<Vec<u8>> {
         self.get_client()
             .await?
@@ -120,6 +129,7 @@ impl ServerObj {
             .await
     }
 
+    #[inline]
     pub async fn create_file<S: AsRef<str>>(&self, file: S) -> CallResult<()> {
         self.get_client()
             .await?
@@ -127,6 +137,7 @@ impl ServerObj {
             .await
     }
 
+    #[inline]
     pub async fn open_file<S: AsRef<str>>(&self, file: S) -> CallResult<sc::Execute> {
         self.get_client()
             .await?
@@ -134,6 +145,7 @@ impl ServerObj {
             .await
     }
 
+    #[inline]
     pub async fn create_dir<S: AsRef<str>>(&self, dir: S) -> CallResult<()> {
         self.get_client()
             .await?
@@ -141,6 +153,7 @@ impl ServerObj {
             .await
     }
 
+    #[inline]
     pub async fn write_file<S: AsRef<str>>(&self, file: S, content: Vec<u8>) -> CallResult<()> {
         self.get_client()
             .await?
@@ -148,6 +161,7 @@ impl ServerObj {
             .await
     }
 
+    #[inline]
     pub async fn delete_file<S: AsRef<str>>(&self, file: S) -> CallResult<()> {
         self.get_client()
             .await?
@@ -155,6 +169,7 @@ impl ServerObj {
             .await
     }
 
+    #[inline]
     pub async fn delete_dir_recursive<S: AsRef<str>>(&self, dir: S) -> CallResult<()> {
         self.get_client()
             .await?
@@ -162,20 +177,23 @@ impl ServerObj {
             .await
     }
 
+    #[inline]
     pub async fn kill_process(&self, pid: u32) -> CallResult<()> {
         self.get_client().await?.kill_process(pid).await
     }
 
+    #[inline]
     pub async fn get_display_info(&self) -> CallResult<Vec<sc::Display>> {
         self.get_client().await?.get_display_info().await
     }
 
+    #[inline]
     pub async fn proxy(
         &self,
         target_addr: SocketAddr,
         sender: rch::bin::Sender,
         receiver: rch::bin::Receiver,
-    ) -> CallResult<()> {
+    ) -> CallResult<Receiver<bool, Bincode>> {
         self.get_client()
             .await?
             .proxy(target_addr, sender, receiver)

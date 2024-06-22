@@ -28,12 +28,9 @@ async fn main() -> AppResult<()> {
 
     // Start logging
     #[cfg(debug_assertions)]
-    Logger::try_with_str(args.verbose)?.start()?;
+    Logger::try_with_str(args.verbose.clone())?.start()?;
 
-    debug!(
-        "server address: {}, web address: {}",
-        args.server_addr, args.web_addr
-    );
+    debug!("server config: {:#?}", args);
 
     // A instance representing all clients connected to the server
     let server_objs = Arc::new(RwLock::new(HashMap::new()));

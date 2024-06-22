@@ -8,6 +8,7 @@ use remoc::{codec, prelude::*};
 use rustls_pki_types::ServerName;
 use shadow_common::{
     client as sc,
+    error::ShadowError,
     server::{self as ss, Server},
     ObjectType,
 };
@@ -71,10 +72,13 @@ async fn get_client(
 ) -> AppResult<ss::ServerClient<codec::Bincode>> {
     match rx.recv().await? {
         Some(s) => match s {
-            ObjectType::ClientClient(_) => unreachable!(),
+            ObjectType::ClientClient(_) => Err(Box::new(ShadowError::ParamInvalid(
+                "expect server, but receive client".into(),
+            ))
+            .into()),
             ObjectType::ServerClient(server_client) => Ok(server_client),
         },
-        None => unreachable!(),
+        None => Err(Box::new(ShadowError::ParamInvalid("can not receive server".into())).into()),
     }
 }
 

@@ -1,17 +1,18 @@
 use crate::network::{server::ServerObj, tls};
 use anyhow::Result as AppResult;
-use log::{debug, info};
-use remoc::{chmux::ChMuxError, codec, prelude::*, rch};
+use log::info;
+use remoc::{codec, prelude::*, rch};
 use shadow_common::{
     client::{self as sc, Client},
+    error::ShadowError,
     server as ss, ObjectType,
 };
 use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 use tokio::{
-    io::{self},
+    io,
     net::{TcpListener, TcpStream},
-    sync::RwLock,
-    task::JoinHandle,
+    select,
+    sync::{oneshot, RwLock},
 };
 use tokio_rustls::{rustls, server::TlsStream, TlsAcceptor};
 
@@ -38,12 +39,14 @@ fn run_server(
     let server_obj = Arc::new(RwLock::new(ServerObj::new(addr)));
     let (server, server_client) =
         ss::ServerServerSharedMut::<_, codec::Bincode>::new(server_obj.clone(), 1);
+    let so = server_obj.clone();
 
     tokio::spawn(async move {
         server.serve(true).await;
 
-        info!("{}: disconnected", addr);
         server_objs.write().await.remove(&addr);
+        info!("{}: disconnected", addr);
+        so.write().await.shutdown_tasks();
     });
 
     Ok((server_obj, server_client))
@@ -61,7 +64,7 @@ async fn send_client(
 async fn connect_client(
     socket: TlsStream<TcpStream>,
 ) -> AppResult<(
-    JoinHandle<Result<(), ChMuxError<std::io::Error, std::io::Error>>>,
+    oneshot::Sender<bool>,
     rch::base::Sender<ObjectType>,
     rch::base::Receiver<ObjectType>,
 )> {
@@ -71,8 +74,15 @@ async fn connect_client(
         rch::base::Sender<ObjectType>,
         rch::base::Receiver<ObjectType>,
     ) = remoc::Connect::io(remoc::Cfg::default(), socket_rx, socket_tx).await?;
+    let (signal_tx, signal_rx) = oneshot::channel();
+    let _ = tokio::spawn(async move {
+        select! {
+            _ = conn => {}
+            _ = signal_rx => {}
+        }
+    });
 
-    Ok((tokio::spawn(conn), tx, rx))
+    Ok((signal_tx, tx, rx))
 }
 
 async fn get_client(
@@ -81,9 +91,12 @@ async fn get_client(
     match rx.recv().await? {
         Some(s) => match s {
             ObjectType::ClientClient(client_client) => Ok(client_client),
-            ObjectType::ServerClient(_) => unreachable!(),
+            ObjectType::ServerClient(_) => Err(Box::new(ShadowError::ParamInvalid(
+                "expect client, but receive client".into(),
+            ))
+            .into()),
         },
-        None => unreachable!(),
+        None => Err(Box::new(ShadowError::ParamInvalid("can not receive client".into())).into()),
     }
 }
 
@@ -108,11 +121,6 @@ pub async fn run(
     cfg: Config,
     server_objs: Arc<RwLock<HashMap<SocketAddr, Arc<RwLock<ServerObj>>>>>,
 ) -> AppResult<()> {
-    debug!(
-        "using certs in {}, private key: {}",
-        cfg.cert_path, cfg.pri_key_path
-    );
-
     let certs = tls::load_certs(cfg.cert_path).await?;
     let key = tls::load_keys(cfg.pri_key_path).await?;
     let tls_config = rustls::ServerConfig::builder()
@@ -129,14 +137,14 @@ pub async fn run(
         tokio::spawn(async move {
             let socket = acceptor.accept(stream).await?;
             let (server_obj, server_client) = run_server(addr, server_objs.clone())?;
-            let (task, mut tx, mut rx) = connect_client(socket).await?;
+            let (signal_tx, mut tx, mut rx) = connect_client(socket).await?;
 
             server_objs.write().await.insert(addr, server_obj.clone());
             send_client(&mut tx, server_client).await?;
 
             let client_client = Arc::new(RwLock::new(get_client(&mut rx).await?));
             server_obj.write().await.client = Some(client_client.clone());
-            server_obj.write().await.task = Some(task);
+            server_obj.write().await.signal_tx = Some(signal_tx);
 
             info!("{}: connected", addr);
             handle_connection(addr, server_obj, client_client).await?;

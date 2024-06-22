@@ -6,7 +6,8 @@ use shadow_common::{error::ShadowError, transfer, CallResult};
 use std::{net::SocketAddr, str::FromStr, sync::Arc};
 use tokio::{
     net::{TcpListener, TcpStream},
-    sync::RwLock,
+    select,
+    sync::{oneshot, RwLock},
 };
 use warp::reply::Reply;
 
@@ -28,23 +29,32 @@ pub async fn open(
 
     let so = server_obj.clone();
     let listener = TcpListener::bind(listen_addr).await?;
-    let task = tokio::spawn(async move {
-        let ret = accept_connection(so.clone(), listener, r#type, user, password).await;
+    let (signal_tx, signal_rx) = oneshot::channel();
+    let _ = tokio::spawn(async move {
+        select! {
+            ret = accept_connection(so.clone(), listener, r#type, user, password) => {
+                match ret {
+                    Ok(_) => info!("{}://{} proxy stopped", r#type, listen_addr),
+                    Err(e) => warn!(
+                        "{}://{} proxy stopped unexpectedly, message: {}",
+                        r#type,
+                        listen_addr,
+                        e.to_string()
+                    ),
+                };
+            }
 
-        match ret {
-            Ok(_) => info!("{}://{} proxy stopped", r#type, listen_addr),
-            Err(e) => warn!(
-                "{}://{} proxy stopped unexpectedly, message: {}",
-                r#type,
-                listen_addr,
-                e.to_string()
-            ),
-        };
+            _ = signal_rx => info!("{}://{} proxy stopped", r#type, listen_addr)
+        }
 
         so.write().await.proxies.remove(&listen_addr);
     });
 
-    server_obj.write().await.proxies.insert(listen_addr, task);
+    server_obj
+        .write()
+        .await
+        .proxies
+        .insert(listen_addr, Some(signal_tx));
 
     super::super::success()
 }
@@ -93,28 +103,38 @@ async fn process_connection(
     password: String,
     mut stream: TcpStream,
 ) -> CallResult<()> {
+    // Get specific parser on demand
     let handler = match r#type {
         ProxyType::Socks5 => socks5::parse,
     };
 
+    // Parse the request
     let target_addr = handler(&mut stream, user, password).await?;
 
+    // Initialize channels for data exchange
     let (server_tx, client_rx) = rch::bin::channel();
     let (client_tx, server_rx) = rch::bin::channel();
 
     // Send the channels to client
-    server_obj
+    let signal_rx = server_obj
         .read()
         .await
         .proxy(target_addr, client_tx, client_rx)
         .await?;
 
-    transfer(
-        server_tx.into_inner().await?,
-        server_rx.into_inner().await?,
-        stream,
-    )
-    .await;
+    // Drop unnecessary reference
+    drop(server_obj);
+
+    select! {
+        // If server-side disconnect
+        _ = transfer(
+            server_tx.into_inner().await?,
+            server_rx.into_inner().await?,
+            stream,
+        ) => {}
+        // If client-side disconnect
+        _ = signal_rx => {}
+    }
 
     Ok(())
 }
@@ -125,15 +145,20 @@ pub async fn close(
 ) -> CallResult<Box<dyn Reply>> {
     let mut server_obj = server_obj.write().await;
 
-    server_obj
+    // Remove instance from the hashmap
+    server_obj.proxies.remove(&listen_addr);
+
+    // Get current proxy instance, if exist, issue stop command
+    if let Some(tx) = server_obj
         .proxies
-        .get(&listen_addr)
+        .get_mut(&listen_addr)
         .ok_or(ShadowError::ParamInvalid(
             "no existing proxy running".into(),
         ))?
-        .abort();
-
-    server_obj.proxies.remove(&listen_addr);
+        .take()
+    {
+        tx.send(true).map_err(|_| ShadowError::StopFailed)?;
+    }
 
     super::super::success()
 }

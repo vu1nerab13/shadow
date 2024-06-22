@@ -24,8 +24,11 @@ pub async fn run(
     // Root page
     let root = path::end().map(|| "Welcome to shadow server!");
 
+    // V1 api
     let v1_api = v1::setup_routes(server_objs.clone());
 
+    // Allow any request
+    // TODO: this is insecure
     warp::serve(
         root.or(v1_api).with(
             warp::cors()

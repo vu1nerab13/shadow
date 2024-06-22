@@ -80,6 +80,9 @@ pub enum ShadowError {
 
     #[error("failed to lookup dns of domain: {0}")]
     DnsLookupError(String),
+
+    #[error("failed to stop task")]
+    StopFailed,
 }
 
 impl From<CallError> for ShadowError {

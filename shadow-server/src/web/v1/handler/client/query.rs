@@ -1,6 +1,7 @@
 use super::Parameter;
 use crate::network::ServerObj;
 use anyhow::Result as AppResult;
+use log::trace;
 use serde::{Deserialize, Serialize};
 use shadow_common::{client as sc, CallResult};
 use std::{str::FromStr, sync::Arc};
@@ -45,6 +46,8 @@ impl Parameter for Query {
 }
 
 async fn summarize_client(server_obj: Arc<RwLock<ServerObj>>) -> CallResult<Box<dyn Reply>> {
+    trace!("querying client's summary");
+
     #[derive(Serialize, Deserialize)]
     struct GetIpReply {
         status: String,
