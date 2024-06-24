@@ -145,9 +145,6 @@ pub async fn close(
 ) -> CallResult<Box<dyn Reply>> {
     let mut server_obj = server_obj.write().await;
 
-    // Remove instance from the hashmap
-    server_obj.proxies.remove(&listen_addr);
-
     // Get current proxy instance, if exist, issue stop command
     if let Some(tx) = server_obj
         .proxies
@@ -159,6 +156,9 @@ pub async fn close(
     {
         tx.send(true).map_err(|_| ShadowError::StopFailed)?;
     }
+
+    // Remove instance from the hashmap
+    server_obj.proxies.remove(&listen_addr);
 
     super::super::success()
 }
