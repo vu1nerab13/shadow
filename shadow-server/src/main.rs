@@ -1,17 +1,3 @@
-/*!
- * *Shadow RAT*
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- *
- * 2024.6.13
- */
-
 use anyhow::Result as AppResult;
 use clap::Parser;
 use flexi_logger::Logger;
@@ -35,8 +21,11 @@ async fn main() -> AppResult<()> {
     // A instance representing all clients connected to the server
     let server_objs = Arc::new(RwLock::new(HashMap::new()));
     // Server config
-    let server_cfg =
-        network::Config::new(args.server_addr.parse()?, args.cert_path, args.pri_key_path);
+    let server_cfg = network::Config::new(
+        args.server_addr.parse()?,
+        args.client_cert_path,
+        args.client_pri_key_path,
+    );
     // Web interface config
     let web_cfg = web::Config::new(args.web_addr.parse()?);
 

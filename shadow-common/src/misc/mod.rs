@@ -1,7 +1,5 @@
 mod embed;
-mod sender;
-
-pub use sender::transfer;
+pub mod sender;
 
 pub fn get_version() -> String {
     embed::VERSION.into()

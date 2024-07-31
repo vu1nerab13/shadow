@@ -76,7 +76,7 @@ async fn summarize_client(server_obj: Arc<RwLock<ServerObj>>) -> CallResult<Box<
     }
 
     let server_obj = server_obj.read().await;
-    let ip = reqwest::get(format!("http://ip-api.com/json/{}", server_obj.get_ip()))
+    let ip = reqwest::get(format!("http://ip-api.com/json/{}", server_obj.ip()))
         .await?
         .json::<GetIpReply>()
         .await?;

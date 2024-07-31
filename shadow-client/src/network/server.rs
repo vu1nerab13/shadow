@@ -7,7 +7,7 @@ use remoc::{
     codec::{self, Bincode},
     prelude::*,
 };
-use shadow_common::{client as sc, error::ShadowError, server as ss, transfer, CallResult};
+use shadow_common::{client as sc, error::ShadowError, misc::sender, server as ss, CallResult};
 use shlex::Shlex;
 use std::{net::SocketAddr, path::Path, sync::Arc};
 use sysinfo::{Pid, System};
@@ -250,7 +250,7 @@ impl sc::Client for ClientObj {
         let (signal_tx, signal_rx) = oneshot::channel();
 
         tokio::spawn(async move {
-            transfer(
+            sender::transfer(
                 sender.into_inner().await?,
                 receiver.into_inner().await?,
                 stream,

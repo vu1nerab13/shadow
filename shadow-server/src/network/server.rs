@@ -1,13 +1,12 @@
 use crate::misc;
 use log::{trace, warn};
-use rch::oneshot::Receiver;
 use remoc::{
     codec::{self, Bincode},
     prelude::*,
 };
 use serde::{Deserialize, Serialize};
 use shadow_common::{
-    client::{self as sc, Client},
+    client::{self as sc},
     error::ShadowError,
     server as ss, CallResult,
 };
@@ -67,7 +66,7 @@ impl ServerObj {
     }
 
     #[inline]
-    pub fn get_ip(&self) -> IpAddr {
+    pub fn ip(&self) -> IpAddr {
         self.addr.ip()
     }
 
@@ -76,7 +75,6 @@ impl ServerObj {
         self.info.clone()
     }
 
-    #[inline]
     pub fn shutdown_tasks(&mut self) {
         for (_, tx) in &mut self.proxies {
             if let Some(tx) = tx.take() {
@@ -87,7 +85,6 @@ impl ServerObj {
         }
     }
 
-    #[inline]
     pub fn disconnect(&mut self) -> CallResult<()> {
         self.signal_tx
             .take()
@@ -96,108 +93,6 @@ impl ServerObj {
             .map_err(|_| ShadowError::StopFailed)?;
 
         Ok(())
-    }
-
-    #[inline]
-    pub async fn system_power(&self, action: sc::SystemPowerAction) -> CallResult<()> {
-        self.get_client().await?.system_power(action).await
-    }
-
-    #[inline]
-    pub async fn get_installed_apps(&self) -> CallResult<Vec<sc::App>> {
-        self.get_client().await?.get_installed_apps().await
-    }
-
-    #[inline]
-    pub async fn get_processes(&self) -> CallResult<Vec<sc::Process>> {
-        self.get_client().await?.get_processes().await
-    }
-
-    #[inline]
-    pub async fn get_file_list<S: AsRef<str>>(&self, dir: S) -> CallResult<Vec<sc::File>> {
-        self.get_client()
-            .await?
-            .get_file_list(dir.as_ref().into())
-            .await
-    }
-
-    #[inline]
-    pub async fn get_file_content<S: AsRef<str>>(&self, file: S) -> CallResult<Vec<u8>> {
-        self.get_client()
-            .await?
-            .get_file_content(file.as_ref().into())
-            .await
-    }
-
-    #[inline]
-    pub async fn create_file<S: AsRef<str>>(&self, file: S) -> CallResult<()> {
-        self.get_client()
-            .await?
-            .create_file(file.as_ref().into())
-            .await
-    }
-
-    #[inline]
-    pub async fn open_file<S: AsRef<str>>(&self, file: S) -> CallResult<sc::Execute> {
-        self.get_client()
-            .await?
-            .open_file(file.as_ref().into())
-            .await
-    }
-
-    #[inline]
-    pub async fn create_dir<S: AsRef<str>>(&self, dir: S) -> CallResult<()> {
-        self.get_client()
-            .await?
-            .create_dir(dir.as_ref().into())
-            .await
-    }
-
-    #[inline]
-    pub async fn write_file<S: AsRef<str>>(&self, file: S, content: Vec<u8>) -> CallResult<()> {
-        self.get_client()
-            .await?
-            .write_file(file.as_ref().into(), content)
-            .await
-    }
-
-    #[inline]
-    pub async fn delete_file<S: AsRef<str>>(&self, file: S) -> CallResult<()> {
-        self.get_client()
-            .await?
-            .delete_file(file.as_ref().into())
-            .await
-    }
-
-    #[inline]
-    pub async fn delete_dir_recursive<S: AsRef<str>>(&self, dir: S) -> CallResult<()> {
-        self.get_client()
-            .await?
-            .delete_dir_recursive(dir.as_ref().into())
-            .await
-    }
-
-    #[inline]
-    pub async fn kill_process(&self, pid: u32) -> CallResult<()> {
-        self.get_client().await?.kill_process(pid).await
-    }
-
-    #[inline]
-    pub async fn get_display_info(&self) -> CallResult<Vec<sc::Display>> {
-        self.get_client().await?.get_display_info().await
-    }
-
-    #[inline]
-    pub async fn proxy(
-        &self,
-        target_addr: SocketAddr,
-        sender: rch::bin::Sender,
-        receiver: rch::bin::Receiver,
-    ) -> CallResult<Receiver<bool, Bincode>> {
-        self.get_client()
-            .await?
-            .proxy(target_addr, sender, receiver)
-            .await
     }
 }
 

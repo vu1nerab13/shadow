@@ -1,5 +1,5 @@
 mod shim;
-mod types;
+pub mod types;
 
 use crate::CallResult;
 use rch::oneshot::Receiver;

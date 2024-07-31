@@ -2,7 +2,7 @@ use super::{socks5, ProxyType};
 use crate::network::ServerObj;
 use log::{info, warn};
 use remoc::rch;
-use shadow_common::{error::ShadowError, transfer, CallResult};
+use shadow_common::{error::ShadowError, misc::sender, CallResult};
 use std::{net::SocketAddr, str::FromStr, sync::Arc};
 use tokio::{
     net::{TcpListener, TcpStream},
@@ -72,7 +72,7 @@ async fn accept_connection(
             Err(e) => {
                 warn!(
                     "{}: error in accepting incoming proxy request, message: {}",
-                    server_obj.read().await.get_ip(),
+                    server_obj.read().await.ip(),
                     e.to_string()
                 );
 
@@ -87,7 +87,7 @@ async fn accept_connection(
             if let Err(e) = process_connection(so.clone(), r#type, user, password, stream).await {
                 warn!(
                     "{}: proxy {} exited unexpectedly, message: {}",
-                    so.read().await.get_ip(),
+                    so.read().await.ip(),
                     addr,
                     e.to_string()
                 )
@@ -127,7 +127,7 @@ async fn process_connection(
 
     select! {
         // If server-side disconnect
-        _ = transfer(
+        _ = sender::transfer(
             server_tx.into_inner().await?,
             server_rx.into_inner().await?,
             stream,
